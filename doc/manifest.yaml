@@ -1,0 +1,15 @@
+actions: []
+authors: ''
+brief: ''
+bugtracker: ''
+depends:
+- catkin
+- rospy
+description: The terminator package
+license: MIT
+maintainers: bostoncleek <bostoncleek@todo.todo>
+msgs: []
+package_type: package
+repo_url: ''
+srvs: []
+url: ''
