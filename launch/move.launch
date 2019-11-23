@@ -1,0 +1,13 @@
+<launch>
+
+  <!-- Setup the grippers: -->
+  <!--
+  <node pkg="terminator" type="add_grippers.sh" name="gripper_modifier" output="screen" respawn="false" /> -->
+
+  <!-- Start the baxter interface package -->
+    <node name="joint_trajectory_action_server" pkg="baxter_interface" type="joint_trajectory_action_server.py" />
+    <include file="$(find baxter_moveit_config)/launch/baxter_grippers.launch" />
+
+    <!--
+     <node name="move_test" pkg="terminator" type="move_test" output="screen" /> -->
+</launch>
