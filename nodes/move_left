@@ -168,7 +168,7 @@ class LeftArm(object):
         pose_goal.position.x = 0.9
         pose_goal.position.y = 0.14
         pose_goal.position.z = -0.225
-        
+
 
         self.left_group.set_pose_target(pose_goal)
 
