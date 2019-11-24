@@ -1,0 +1,12 @@
+<!-- Baxter sim launch file with custom world. -->
+
+<launch>
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+
+  <include file="$(find baxter_gazebo)/launch/baxter_world.launch">
+    <arg name="world_name" value="$(find final-project-terminator)/world/t_sim.world"/>
+  </include>
+  <!-- <arg name="rvizconfig" default="$(find ddrive)/urdf/urdf.rviz"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/> -->
+
+</launch>

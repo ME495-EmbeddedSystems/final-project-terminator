@@ -1,0 +1,2 @@
+- builder: sphinx
+  sphinx_root_dir: doc # this is where documentation will be created
