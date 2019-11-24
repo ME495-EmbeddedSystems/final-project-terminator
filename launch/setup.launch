@@ -1,0 +1,31 @@
+<launch>
+  <arg name="config" default="true"/>
+  <arg name="rviz_config" default="$(find baxter_moveit_config)/launch/moveit.rviz" />
+
+  <!--Node for trajectories, used with MoveIt -->
+  <node name="joint_trajectory_action_server" pkg="baxter_interface" type="joint_trajectory_action_server.py" output="log"/>
+
+  <!-- Taken from the demo_baxter.launch in the baxter_moveit_config-->
+
+  <include file="$(find baxter_moveit_config)/launch/planning_context.launch">
+    <arg name="load_robot_description" value="true"/>
+  </include>
+
+  <arg name="kinect" default="false" />
+  <arg name="xtion" default="false" />
+  <arg name="camera_link_pose" default="0.15 0.075 0.5 0.0 0.7854 0.0"/>
+  <include file="$(find baxter_moveit_config)/launch/move_group.launch">
+    <arg name="kinect" value="$(arg kinect)" />
+    <arg name="xtion" value="$(arg xtion)" />
+    <arg name="camera_link_pose" default="$(arg camera_link_pose)"/>
+    <arg name="allow_trajectory_execution" value="true"/>
+  </include>
+
+
+  <include file="$(find baxter_moveit_config)/launch/moveit_rviz.launch">
+    <arg name="config" value="$(arg config)" />
+    <arg name="rviz_config" value="$(arg rviz_config)" />
+  </include>
+
+
+</launch>
