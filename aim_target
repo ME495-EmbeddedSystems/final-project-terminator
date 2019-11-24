@@ -13,9 +13,23 @@ import sys
 import time
 import tf
 
-class baxter:
+'''
+This node subsribe to the /targetBox topic and get the darknet_ros_msgs.BoundingBox.msg
+https://github.com/leggedrobotics/darknet_ros/blob/master/darknet_ros_msgs/msg/BoundingBox.msg
+messages are as follows:
+float64 probability
+int64 xmin
+int64 ymin
+int64 xmax
+int64 ymax
+int16 id
+string Class
+so this node get the center of the bounding box(target) and move the arm to that center.
+'''
+class aim_target:
+    '''move the left arm to the target'''
     def __init__(self, side):
-        self.ar_track_data = []
+        
         self.limb = intera_interface.Limb(side)
 
     # call back function for ar tag tracking
@@ -63,7 +77,7 @@ class baxter:
 
         # Call TF to transform to coordinate w.r.t. base frame
 
-    def aim_at(self, arm, x, y):
+    def aim_at(self, arm, msg):
         #First goal pose ------------------------------------------------------
         goal = PoseStamped()
         goal.header.frame_id = "base"
@@ -211,7 +225,7 @@ def main():
     rp = intera_interface.RobotParams()
     valid_limbs = rp.get_limb_names()
     rospy.init_node('doctor', log_level=rospy.DEBUG)        
-
+    '''initialize moveit_commander and rospy'''
     moveit_commander.roscpp_initialize(sys.argv)
     rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
