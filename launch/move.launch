@@ -8,6 +8,16 @@
     <node name="joint_trajectory_action_server" pkg="baxter_interface" type="joint_trajectory_action_server.py" />
     <include file="$(find baxter_moveit_config)/launch/baxter_grippers.launch" />
 
-    <!--
-     <node name="move_test" pkg="terminator" type="move_test" output="screen" /> -->
+<!--
+     <node name="move_left" pkg="terminator" type="move_left" output="screen" />
+   -->
+<!--
+   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+-->
+
+   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+      <param name="use_gui" value="false" />
+   </node>
+ 
+
 </launch>
