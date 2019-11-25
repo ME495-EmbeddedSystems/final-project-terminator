@@ -16,9 +16,3 @@ because I've already added the
 `export ROS_IP=10.42.0.1` to my setup.bash
 =======
 
-export ROS_MASTER_URI=http://10.42.0.2:11311
-export ROS_IP=10.42.0.1
-
-
-rosrun baxter_tools enable_robot.py -e
->>>>>>> 12d7c904ba5cde075cf9ba51605f99d82f55c33a
