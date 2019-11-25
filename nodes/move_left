@@ -101,7 +101,7 @@ class LeftArm(object):
         self.group_names = self.robot.get_group_names()
         rospy.loginfo("========== Robot Groups: %s" % self.robot.get_group_names())
         """
-
+ 
 
     def gun_callback(self, msg):
         """ callback for the pose of the gun

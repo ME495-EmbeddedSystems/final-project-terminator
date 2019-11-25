@@ -11,9 +11,9 @@
 <!--
      <node name="move_left" pkg="terminator" type="move_left" output="screen" />
    -->
-<!--
-   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
--->
+
+  <!--  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/> -->
+
 
    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
       <param name="use_gui" value="false" />

@@ -1,240 +1,195 @@
 #!/usr/bin/env python
 
-from ar_track_alvar_msgs.msg import AlvarMarkers
-from geometry_msgs.msg import PoseStamped
-import intera_external_devices
-import intera_interface
-from intera_interface import CHECK_VERSION
-import moveit_commander
-from moveit_msgs.msg import OrientationConstraint, Constraints
-import numpy as np
-import rospy
+
 import sys
-import time
-import tf
-
-'''
-This node subsribe to the /targetBox topic and get the darknet_ros_msgs.BoundingBox.msg
-https://github.com/leggedrobotics/darknet_ros/blob/master/darknet_ros_msgs/msg/BoundingBox.msg
-messages are as follows:
-float64 probability
-int64 xmin
-int64 ymin
-int64 xmax
-int64 ymax
-int16 id
-string Class
-so this node get the center of the bounding box(target) and move the arm to that center.
-'''
-class aim_target:
-    '''move the left arm to the target'''
-    def __init__(self, side):
-        
-        self.limb = intera_interface.Limb(side)
-
-    # call back function for ar tag tracking
-    def ar_track_callback(self, data):
-        # If already get enough data, ignore it
-        if len(self.ar_track_data) > 10:
-            return
-
-        if len(data.markers) == 0:
-            return
-
-        rospy.logdebug("Received AR track data")
-        pos = data.markers[0].pose.pose.position
-        self.ar_track_data.append((pos.x, pos.y, pos.z))
-
-        if len(self.ar_track_data) == 10:
-            # Average the received data
-            # might need to filter out outliers in the future
-            self.table_x = np.mean([pos[0] for pos in self.ar_track_data])        
-            self.table_y = np.mean([pos[1] for pos in self.ar_track_data])        
-            self.table_z = np.mean([pos[2] for pos in self.ar_track_data])    
-            rospy.logwarn("Table center found at: %s", str([self.table_x, self.table_y, self.table_z]))   
-#            print("Table center found at: " + str([self.table_x, self.table_y, self.table_z]))
-#            listener = tf.TransformListener()
-#            print(listener.allFramesAsString())
-#
-#            while not rospy.is_shutdown():
-#                try:
-#                    (trans,rot) = listener.lookupTransform('/head_camera', '/base', rospy.Time(0))
-#                    break
-#                except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-#                    continue
-    
-            # Look up TF transform
-#            g = listener.fromTranslationRotation(trans, rot)
-#            point_camera_frame = np.array([camera_x, camera_y, camera_z, 1])
-#            print(point_camera_frame)
-#            print(g.dot(point_camera_frame))
+import rospy
+import copy
+import baxter_interface
+import moveit_commander
+import moveit_msgs.msg
+import geometry_msgs.msg
+from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
+from std_msgs.msg import String, Bool
+from moveit_commander.conversions import pose_to_list
+from baxter_interface import Gripper, CHECK_VERSION
 
 
-    # Find an AR tag that designates the center of camera
-    def find_table(self):
-        # Capture output from topic 'visualization_marker'
-        rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_track_callback)
 
-        # Call TF to transform to coordinate w.r.t. base frame
+class AimTarget(object):
+	""" manipulates baxters left arm """
 
-    def aim_at(self, arm, msg):
-        #First goal pose ------------------------------------------------------
-        goal = PoseStamped()
-        goal.header.frame_id = "base"
-    
-        #x, y, and z position
-        goal.pose.position.x = x
-        goal.pose.position.y = y
-        goal.pose.position.z = 0.30
-        
-        #Orientation as a quaternion
-        goal.pose.orientation.x = 0.0
-        goal.pose.orientation.y = -1.0
-        goal.pose.orientation.z = 0.0
-        goal.pose.orientation.w = 0.0
-    
-        #Set the goal state to the pose you just defined
-        #arm.set_pose_target(goal)
-        arm.set_position_target([x, y, self.table_z + 0.30])
-    
-        #Set the start state for the right arm
-        arm.set_start_state_to_current_state()
-        
+	def __init__(self):
 
-        #Plan a path
-        right_plan = arm.plan()
-    
-        #Execute the plan
-        confirmed = raw_input('Execute? y/n')
-        if confirmed == "y":
-            arm.execute(right_plan)
-        else:
-            print("Aborted")
-            return "Failed to poke at " + str(x) + "," + str(y)
+		rospy.loginfo("Ready for aim_target")
+		super(AimTarget, self).__init__()
+		# First initialize moveit_commander and a rospy node:
+		moveit_commander.roscpp_initialize(sys.argv)
+		rospy.init_node("aim_target", anonymous=True)
+		# Instantiate a RobotCommander object. 
+		joint_state_topic = ['joint_states:=/robot/joint_states']
+		moveit_commander.roscpp_initialize(joint_state_topic)
+		# self.add_box()
+		self.robot = moveit_commander.RobotCommander()
+		# Instantiate a PlanningSceneInterface object. 
+		self.scene = moveit_commander.PlanningSceneInterface()
+		# Instantiate a MoveGroupCommander object. This object is an interface to a planning group
+		baxter_interface.RobotEnable().enable()
+		rospy.sleep(0.25)
+		rospy.loginfo("Ready for aim_target")
 
-        #Start poking down in the z-direction using torque control
-        rospy.sleep(1)
-        force = self.limb.endpoint_effort()['force']
-        torque = self.limb.endpoint_effort()['torque']
+		self.aim_the_target = moveit_commander.MoveGroupCommander('left_arm')
+		self.aim_the_target.set_goal_position_tolerance(0.01)
+		self.aim_the_target.set_goal_orientation_tolerance(0.01)
+		# self.aim_the_target.set_planner_id('RRTConnectkConfigDefault')
+		# self.aim_the_target.set_planning_time(30)
+		# self.aim_the_target.allow_replanning(True)
+		# self.aim_the_target.set_max_velocity_scaling_factor(0.6)
+		# self.aim_the_target.set_max_acceleration_scaling_factor(0.6)
 
-        # Keep poking down as long as force within threshold
-        thres = 5.0 #threshold in Newton
-        while (force.x ** 2 + force.y ** 2 + force.z ** 2 < thres ** 2):
-            rospy.sleep(1)
-            force = self.limb.endpoint_effort()['force']
-            torque = self.limb.endpoint_effort()['torque']
-            rospy.logdebug("End Effector Force is: " + str([force.x, force.y, force.z]))
-            goal.pose.position.z = goal.pose.position.z - 0.02
-            arm.set_pose_target(goal)
-            arm.set_start_state_to_current_state()        
-            right_plan = arm.plan()
-    
-            #Execute the plan
-            confirmed = raw_input('Keep probing downwards? y/n')
-            if confirmed == "y":
-                arm.execute(right_plan)
-            else:
-                break
+		# trajectory in RVIZ
+		self.display_trajectory_publisher = rospy.Publisher(
+			'/move_group/display_planned_path',
+			moveit_msgs.msg.DisplayTrajectory,
+			queue_size=20)
+		# get the name of the reference frame for this robot:
+		planning_frame = self.aim_the_target.get_planning_frame()
+		print "============ Planning frame: %s" % planning_frame     
 
-        rospy.logdebug("Starting to probe in a new position") 
+	
+		# subscribe to targetBox
+		# self.gun_pose_sub = rospy.Subscriber("/targetBox", BoundingBoxes, self.aim_goal)
+
+	   
+
+	# def aim_goal(self, msg):
+	#     """ callback for the target position
+	#     Args:
+	#    
+	#     """
 
 
-    # Outputs a 2D array of hardness in each point probed
-    # Parameters: nx, ny, dx, dy
-    # Probes at [table_x-nx*dx, table_x + nx*dx]
-    # Returns a dictionary with key as (x, y) and value as something representing hardness
-    def aim(self, nx, ny, dx, dy):
-        #Initialize arms
-        robot = moveit_commander.RobotCommander()
-        scene = moveit_commander.PlanningSceneInterface()
 
 
-        right_arm = moveit_commander.MoveGroupCommander('right_arm')
-        right_arm.set_planner_id('RRTConnectkConfigDefault')
-        right_arm.set_planning_time(15)
-
-        # Set constraints
-        rospy.sleep(2)
-
-        # Assuming you're facing the wall, looking at the robot
-        # And the robot's computer is to your left
-        # Then Wall 1 is the wall on "your" right
-        # Wall 2 is the wall to "your" left
-        # Wall 3 is the wall in the back
-        #raw_input("press any key to add wall 1")
-        p = PoseStamped()
-        p.header.frame_id = robot.get_planning_frame()
-        p.pose.position.x = 0.7
-        p.pose.position.y = 0.
-        p.pose.position.z = 0.
-        scene.add_box("wall1", p, (0.1, 5, 5))
 
 
-        #raw_input("press any key to add wall 2")
-        p = PoseStamped()
-        p.header.frame_id = robot.get_planning_frame()
-        p.pose.position.x = -1
-        p.pose.position.y = 0.
-        p.pose.position.z = 0.
-        scene.add_box("wall2", p, (0.1, 5, 5))
+	def aim_goal(self):
+		""" moves baxters left end effector to a pose goal """
 
 
-        #raw_input("press any key to add wall 3")
-        p = PoseStamped()
-        p.header.frame_id = robot.get_planning_frame()
-        p.pose.position.x = 0
-        p.pose.position.y = 0.7
-        p.pose.position.z = 0.
-        scene.add_box("wall3", p, (5, 0.1, 5))
+	
+		aim_goal = geometry_msgs.msg.Pose()
 
-        #raw_input("press any key to add patient")
-        p = PoseStamped()
-        p.header.frame_id = robot.get_planning_frame()
-        p.pose.position.x = self.table_x
-        p.pose.position.y = self.table_y
-        p.pose.position.z = self.table_z / 2.0
-        scene.add_box("patient", p, (0.3, 0.3, self.table_z / 2.0))
+		aim_goal.orientation.x = -0.30
+		aim_goal.orientation.y = 0.94
+		aim_goal.orientation.z = -0.06
+		aim_goal.orientation.w = 0.05
 
-        orien_const = OrientationConstraint()
-        orien_const.link_name = "right_gripper";
-        orien_const.header.frame_id = "base";
-        orien_const.orientation.y = -1.0;
-        orien_const.absolute_x_axis_tolerance = 0.1;
-        orien_const.absolute_y_axis_tolerance = 0.1;
-        orien_const.absolute_z_axis_tolerance = 50;
-        orien_const.weight = .5;
-        consts = Constraints()
-        consts.orientation_constraints = [orien_const]
-        right_arm.set_path_constraints(consts)
+		aim_goal.position.x = -0.37
+		aim_goal.position.y = 0.30
+		aim_goal.position.z = -0.09
 
-        ans = {} # start with empty dictionary
-        for i in range(-nx, nx+1):
-            for j in range(-nx, nx+1):
-                ans[(i, j)] = self.poke_at(right_arm, self.table_x + i * dx, self.table_y + j * dy)
-        return ans
+		self.aim_the_target.set_pose_target(aim_goal)
+		# self.aim_the_target.set_start_state_to_current_state()        
+		# plan to path goal
 
-    # Outputs temperature measure
-    def measure_temperature(self):
-        pass
+		plan = self.aim_the_target.plan()
+		self.display_trajectory(plan)
 
-    def measure_pulse(self):
-        pass
+		# execute plan
+		confirmed = raw_input('Execute aim_target? y/n')
+		if confirmed == "y":
+			self.aim_the_target.execute(plan, wait=True)        
+			self.aim_the_target.stop()
+			self.aim_the_target.clear_pose_targets()
+
+		current_pose = self.aim_the_target.get_current_pose().pose
+		print("current_pose is:")
+		print(current_pose)
+		print("the goal pose is :")
+		print(aim_goal)
+
+		if self.check_aim(aim_goal, current_pose):
+			print("Aiming!")
+
+		else:
+			print("Not Aiming!")
+
+
+		
+
+	def display_trajectory(self, plan):
+		""" Published planned trajectory in rviz
+		Args:
+			plan (): motion plan to goal
+		"""
+
+		display_traj = moveit_msgs.msg.DisplayTrajectory()
+		display_traj.trajectory_start = self.robot.get_current_state()
+		display_traj.trajectory.append(plan)
+		self.display_trajectory_publisher.publish(display_traj);
+
+	def check_aim(self, goal, actual):
+		""" Test if end effector made it to target
+		Args:
+		goal (Pose): target for robot
+		actual (Pose): where robot actually is
+		Returns:
+		bool: True for success
+		"""
+
+		goal = pose_to_list(goal)
+		actual = pose_to_list(actual)
+
+		for index in range(len(goal)):
+			if abs(actual[index] - goal[index]) > 0.01:
+				return False
+
+		return True
+	
+	
+		# return self.wait_for_state_update(box_is_known=True, timeout=timeout)
+  
+
+	# def add_box(self, timeout=4):
+	#     """ Adds a box to rviz """
+
+	#     # Add Objects to Planning Scene
+	#     self.box_name = 'table'
+	#     self.box_pose = PoseStamped()
+	#     # Can reference to base frame
+	#     # Or can reference to EE finger frame
+	#     # for grasping
+	#     self.box_pose.header.frame_id = "base"
+	#     self.box_pose.pose.position.x = 0.5
+	#     self.box_pose.pose.position.z = -0.3095
+	#     self.box_pose.pose.orientation.w = 1.0
+	#     # Length, Width, Height
+	#     self.scene.add_box(self.box_name, self.box_pose, size=(0.6, 0.8, 0.1))
+	#     # return self.wait_for_state_update(box_is_known=True, timeout=timeout)
+
 
 
 def main():
-    rp = intera_interface.RobotParams()
-    valid_limbs = rp.get_limb_names()
-    rospy.init_node('doctor', log_level=rospy.DEBUG)        
-    '''initialize moveit_commander and rospy'''
-    moveit_commander.roscpp_initialize(sys.argv)
-    rs = intera_interface.RobotEnable(CHECK_VERSION)
-    init_state = rs.state().enabled
 
-    rs.enable()
+	try:
+		aim_target = AimTarget()
+		action = raw_input("(A)im the target?")
+		if (action == "A"):
+			aim_target.aim_goal()
 
+	except rospy.ROSInterruptException:
+		return
+	except KeyboardInterrupt:
+		return
 
-    rospy.spin()
+	rospy.spin()
 
 
 if __name__ == '__main__':
-    main()
+	main()
+
+
+
+
+
+
