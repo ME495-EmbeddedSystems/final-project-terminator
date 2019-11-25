@@ -153,10 +153,14 @@ class LeftArm(object):
         Tbg = np.dot(Tbe, Teg)
 
         # pose of gun relative to baxter
-        quat, trans = extract_pose(Tbg)
+        quat, trans = self.extract_pose(Tbg)
 
         # move hand to standoff behind the gun
-        pose_goal.orientation = quat
+        pose_goal.orientation.x = quat[0]
+        pose_goal.orientation.y = quat[1]
+        pose_goal.orientation.z = quat[2]
+        pose_goal.orientation.w = quat[3]
+
         pose_goal.position.x = trans[0] - self.standoff
         pose_goal.position.y = trans[1]
         pose_goal.position.z = trans[2]
@@ -188,7 +192,12 @@ class LeftArm(object):
 
 
         # position EE at handle of gun
-        pose_goal.orientation = quat
+        pose_goal.orientation.x = quat[0]
+        pose_goal.orientation.y = quat[1]
+        pose_goal.orientation.z = quat[2]
+        pose_goal.orientation.w = quat[3]
+
+
         pose_goal.position.x = trans[0]
         pose_goal.position.y = trans[1]
         pose_goal.position.z = trans[2]
@@ -210,7 +219,7 @@ class LeftArm(object):
         print(left_EE_pose)
         #print(self.left_group.get_end_effector_link())
 
-        if self.made_it(pose_goal, current_pose):
+        if self.made_it(pose_goal, left_EE_pose):
             print("Ready to grasp gun!")
 
         else:
@@ -242,11 +251,13 @@ class LeftArm(object):
             T (np.array): homogenous transformation matrix
         """
 
-        homo_rot = quaternion_matrix(pose.orientation)
+        quat_list = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
+
+        homo_rot = quaternion_matrix(quat_list)
 
         T = np.array([[homo_rot[0][0], homo_rot[0][1], homo_rot[0][2], pose.position.x],
                       [homo_rot[1][0], homo_rot[1][1], homo_rot[1][2], pose.position.y],
-                      [homo_rot[0][0], homo_rot[0][1], homo_rot[0][2], pose.position.z],
+                      [homo_rot[2][0], homo_rot[2][1], homo_rot[2][2], pose.position.z],
                       [0,              0,              0,              1]])
 
 
@@ -328,13 +339,13 @@ def main():
         left_arm = LeftArm()
 
         #print("============ Press `Enter` to execute a movement using a pose goal")
-        raw_input()
-        left_arm.go_to_goal()
+        #raw_input()
+        #left_arm.go_to_goal()
 
 
         #print("============ Press `Enter` to close left gripper")
-        raw_input()
-        left_arm.left_gripper.close()
+        #raw_input()
+        #left_arm.left_gripper.close()
 
 
     except rospy.ROSInterruptException:
