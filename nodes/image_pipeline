@@ -125,7 +125,7 @@ class imageProcessor:
     def publish_left_calibration(self, data):
         # Publish the info on the correct topic so apriltag_ros can use it
         self.calibrationMatrixLeftPub.publish(data) 
-        self.redistributeCameraInfo.publish(data) 
+        # self.redistributeCameraInfo.publish(data) 
 
 
     def distributeRectified(self, data):
@@ -139,11 +139,11 @@ class imageProcessor:
         # self.headCamera = rospy.Subscriber("/cameras/head_camera/image", Image, self.process_image) 
         
         self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info", CameraInfo, self.publish_left_calibration)
-        self.calibrationMatrixLeftPub =  rospy.Publisher("/camera_info", CameraInfo, queue_size = 1)
+        self.calibrationMatrixLeftPub =  rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
         
-        self.redistributeCameraInfo = rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
+        # self.redistributeCameraInfo = rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
        
-        self.pub = rospy.Publisher("/image_raw", Image, queue_size = 1)
+        self.pub = rospy.Publisher("/camera/image_raw", Image, queue_size = 1)
         
         # Redistributes the rectified image to the april tags detector
         self.rectifiedDistributor = rospy.Subscriber( "/image_rect_color", Image, self.distributeRectified )
@@ -155,7 +155,7 @@ class imageProcessor:
         
         # Create publisher to publish the target's location
         self.targetInfo =  rospy.Publisher("/targetBox", BoundingBoxes, queue_size = 1)
-        
+       
         # Subscribe to the april tag classification data stream
         self.apriltags = rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.apriltag_callback)
         self.desiredGunPose = rospy.Publisher("/gun_pose", Pose, queue_size = 1 )
