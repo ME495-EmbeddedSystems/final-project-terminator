@@ -83,7 +83,7 @@ class LeftArm(object):
 
 
         # subscribe to gun pose
-        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.gun_callback)
+        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
 
         #self.robot_state = self.robot.get_current_state()
         #print(self.robot_state)
@@ -109,27 +109,30 @@ class LeftArm(object):
         Args:
             msg (Pose): pose of gun
         """
+        #self.go_to_goal(msg)
+        pass
 
 
 
 
-
-
-    def go_to_goal(self):
+    def go_to_goal(self, msg):
         """ moves baxters left end effector to a pose goal """
-
+        
 
         # move EE right behind gun and stop
         pose_goal = geometry_msgs.msg.Pose()
-
+        """
         pose_goal.orientation.x = 0.70
         pose_goal.orientation.y = 0.027
         pose_goal.orientation.z = 0.713
         pose_goal.orientation.w = 0.04
+        """
 
-        pose_goal.position.x = 0.9 - self.standoff
-        pose_goal.position.y = 0.14
-        pose_goal.position.z = -0.225
+        pose_goal.orientation = msg.orientation
+
+        pose_goal.position.x = msg.position.x - self.standoff
+        pose_goal.position.y = msg.position.y
+        pose_goal.position.z = msg.position.z
 
 
         self.left_group.set_pose_target(pose_goal)
@@ -159,15 +162,17 @@ class LeftArm(object):
 
         # position EE at handle of gun
         pose_goal = geometry_msgs.msg.Pose()
-
+        """
         pose_goal.orientation.x = 0.70
         pose_goal.orientation.y = 0.027
         pose_goal.orientation.z = 0.713
         pose_goal.orientation.w = 0.04
+        """
+        pose_goal.orientation = msg.orientation
 
-        pose_goal.position.x = 0.9
-        pose_goal.position.y = 0.14
-        pose_goal.position.z = -0.225
+        pose_goal.position.x = msg.position.x
+        pose_goal.position.y = msg.position.y
+        pose_goal.position.z = msg.position.z
 
 
         self.left_group.set_pose_target(pose_goal)
@@ -257,14 +262,14 @@ def main():
     try:
         left_arm = LeftArm()
 
-        print("============ Press `Enter` to execute a movement using a pose goal")
-        raw_input()
-        left_arm.go_to_goal()
+        #print("============ Press `Enter` to execute a movement using a pose goal")
+        # raw_input()
+        # left_arm.go_to_goal()
 
 
-        print("============ Press `Enter` to close left gripper")
-        raw_input()
-        left_arm.left_gripper.close()
+        #print("============ Press `Enter` to close left gripper")
+        #raw_input()
+        #left_arm.left_gripper.close()
 
 
     except rospy.ROSInterruptException:

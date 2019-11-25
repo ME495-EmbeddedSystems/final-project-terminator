@@ -103,9 +103,22 @@ class imageProcessor:
     # strip off the data we don't need and publish just the pose
     # to the nodes which move the robot
     def apriltag_callback(self, data):
+       
+        
+        myPose = Pose()
+        
         # print( data.detections[2].pose.pose.pose )
-        self.desiredGunPose.publish( data.detections[2].pose.pose.pose )
-    
+        
+        # if ( len(data.detections) > 1 ):
+        # self.desiredGunPose.publish( data.detections[2].pose.pose.pose )            
+         
+        # myPose.orientation = data.detections.pose
+        # myPose.position = 
+        
+        if ( len(data.detections) > 0):
+            self.desiredGunPose.publish( data.detections[0].pose.pose.pose )
+        else:
+            pass
 
     # This method recieves the calibration matrix from Baxter's right arm
     # and publishes it to the correct topic so that apriltags can use it 
