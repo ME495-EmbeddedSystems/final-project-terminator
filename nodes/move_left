@@ -86,7 +86,7 @@ class LeftArm(object):
         # Initialize attribute for desired EE Pose
         self.pose_goal = Pose()
         # Amount to pull back pre and post grip (approach, retreat)
-        self.standoff = 0.1
+        self.standoff = 0.2
 
 
         # trajectory in RVIZ
@@ -98,6 +98,8 @@ class LeftArm(object):
 
         # subscribe to gun pose
         self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
+
+        print("done initializing")
 
         #self.robot_state = self.robot.get_current_state()
         #print(self.robot_state)
@@ -133,21 +135,14 @@ class LeftArm(object):
         """ moves baxters left end effector to a pose goal """
 
 
-        # move EE right behind gun and stop
-        pose_goal = geometry_msgs.msg.Pose()
-        """
-        pose_goal.orientation.x = 0.70
-        pose_goal.orientation.y = 0.027
-        pose_goal.orientation.z = 0.713
-        pose_goal.orientation.w = 0.04
-        #"""
-
         # compute transformation of gun relative to EE
         Teg = self.get_transform(msg)
-        #Teg = self.get_transform(pose_goal)
 
         # comput transformation of EE relative to baxter
         left_EE_pose = self.left_group.get_current_pose().pose
+        print("EE pose")
+        print(left_EE_pose)
+
         Tbe = self.get_transform(left_EE_pose)
         # tranformation from baxter to gun
         Tbg = np.dot(Tbe, Teg)
@@ -155,16 +150,31 @@ class LeftArm(object):
         # pose of gun relative to baxter
         quat, trans = self.extract_pose(Tbg)
 
+
+        # move EE right behind gun and stop
+        pose_goal = geometry_msgs.msg.Pose()
+
         # move hand to standoff behind the gun
         pose_goal.orientation.x = quat[0]
         pose_goal.orientation.y = quat[1]
         pose_goal.orientation.z = quat[2]
         pose_goal.orientation.w = quat[3]
 
-        pose_goal.position.x = trans[0] - self.standoff
+        #"""
+        pose_goal.orientation.x = 0.05
+        pose_goal.orientation.y = 0.70
+        pose_goal.orientation.z = 0.028
+        pose_goal.orientation.w = 0.72
+        #"""
+
+        pose_goal.position.x = trans[0]
         pose_goal.position.y = trans[1]
         pose_goal.position.z = trans[2]
 
+
+        print("-------------")
+        print("current goal")
+        print(pose_goal)
 
         self.left_group.set_pose_target(pose_goal)
 
@@ -196,11 +206,10 @@ class LeftArm(object):
         pose_goal.orientation.y = quat[1]
         pose_goal.orientation.z = quat[2]
         pose_goal.orientation.w = quat[3]
-
-
         pose_goal.position.x = trans[0]
         pose_goal.position.y = trans[1]
         pose_goal.position.z = trans[2]
+
 
         self.left_group.set_pose_target(pose_goal)
 
@@ -214,6 +223,9 @@ class LeftArm(object):
         self.left_group.clear_pose_targets()
 
 
+        rospy.sleep(2)
+
+
         #current_pose = self.left_group.get_current_pose(self.left_group.get_end_effector_link()).pose
         left_EE_pose = self.left_group.get_current_pose().pose
         print(left_EE_pose)
@@ -224,6 +236,11 @@ class LeftArm(object):
 
         else:
             print("Not ready to grasp gun!")
+
+
+        print("============ Press `Enter` to close left gripper")
+        raw_input()
+        self.left_gripper.close()
 
 
 
@@ -361,6 +378,17 @@ if __name__ == '__main__':
 
 
 
+
+"""
+pose_goal.orientation.x = 0.70
+pose_goal.orientation.y = 0.027
+pose_goal.orientation.z = 0.713
+pose_goal.orientation.w = 0.04
+
+pose_goal.position.x = 0.4 - self.standoff
+pose_goal.position.y = 0.1
+pose_goal.position.z = 0.4
+"""
 
 
 
