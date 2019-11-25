@@ -125,7 +125,12 @@ class imageProcessor:
     def publish_left_calibration(self, data):
         # Publish the info on the correct topic so apriltag_ros can use it
         self.calibrationMatrixLeftPub.publish(data) 
-    
+        self.redistributeCameraInfo.publish(data) 
+
+
+    def distributeRectified(self, data):
+        self.publishRectified.publish(data)
+
     # Constructor method
     def __init__(self):
         self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_initial_image)
@@ -134,10 +139,17 @@ class imageProcessor:
         # self.headCamera = rospy.Subscriber("/cameras/head_camera/image", Image, self.process_image) 
         
         self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info", CameraInfo, self.publish_left_calibration)
-        self.calibrationMatrixLeftPub =  rospy.Publisher("/camera_rect/camera_info", CameraInfo, queue_size = 1)
-
-        self.pub = rospy.Publisher("/camera_rect/image_rect", Image, queue_size = 1)
+        self.calibrationMatrixLeftPub =  rospy.Publisher("/camera_info", CameraInfo, queue_size = 1)
         
+        self.redistributeCameraInfo = rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
+       
+        self.pub = rospy.Publisher("/image_raw", Image, queue_size = 1)
+        
+        # Redistributes the rectified image to the april tags detector
+        self.rectifiedDistributor = rospy.Subscriber( "/image_rect_color", Image, self.distributeRectified )
+        self.publishRectified = rospy.Publisher( "/camera/image_rect", Image, queue_size = 1   )
+        
+
         # Subscribe to YOLO ROS's description of where the objects are 
         self.result_image = rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.process_final_image)
         
