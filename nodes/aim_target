@@ -79,14 +79,14 @@ class AimTarget(object):
 	
 		aim_goal = geometry_msgs.msg.Pose()
 
-		aim_goal.orientation.x = -0.30
-		aim_goal.orientation.y = 0.94
-		aim_goal.orientation.z = -0.06
-		aim_goal.orientation.w = 0.05
+		aim_goal.orientation.x = -0.618235
+		aim_goal.orientation.y = 0.784464
+		aim_goal.orientation.z = 0.016503
+		aim_goal.orientation.w = 0.0461452		
 
-		aim_goal.position.x = -0.37
-		aim_goal.position.y = 0.30
-		aim_goal.position.z = -0.09
+		aim_goal.position.x = -0.205829
+		aim_goal.position.y = 0.654037
+		aim_goal.position.z = -0.389637
 
 		self.aim_the_target.set_pose_target(aim_goal)
 		# self.aim_the_target.set_start_state_to_current_state()        
