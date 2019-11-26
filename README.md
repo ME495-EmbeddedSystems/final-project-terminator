@@ -3,7 +3,7 @@ WHEN RUNNING ON SIMULATOR&WITHOUT LAUNCHFILE:
 
 run `roslaunch baxter_gazebo baxter_world.launch` to start the simulator
 
-run `rosrun baxter_tools enable.py -e` to enable the robot: 
+run `rosrun baxter_tools enable_robot.py -e` to enable the robot: 
 
 run `rosrun baxter_interface joint_trajectory_action_server.py` to start the joint trajectory controller
 
