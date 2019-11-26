@@ -50,7 +50,7 @@ class imageProcessor:
     # This node recieves from Baxter's camera
     # and publishes it in a format that YOLO ROS can use
     def process_initial_image(self, data):
-        
+        # pass
         # Publish the image we recieved so YOLO ROS can process it 
         self.pub.publish(data)
         self.pub2.publish(data)
@@ -126,7 +126,8 @@ class imageProcessor:
     def publish_left_calibration(self, data):
         # Publish the info on the correct topic so apriltag_ros can use it
         self.calibrationMatrixLeftPub.publish(data) 
-        # self.redistributeCameraInfo.publish(data) 
+        self.redistributeCameraInfo.publish(data) 
+        self.redistributeCameraInfo2.publish(data)
 
 
     def distributeRectified(self, data):
@@ -139,17 +140,22 @@ class imageProcessor:
         # self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_image)
         # self.headCamera = rospy.Subscriber("/cameras/head_camera/image", Image, self.process_image) 
         
-        self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info", CameraInfo, self.publish_left_calibration)
+        self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info_std", CameraInfo, self.publish_left_calibration)
         self.calibrationMatrixLeftPub =  rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
         
-        # self.redistributeCameraInfo = rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
-       
+        self.redistributeCameraInfo = rospy.Publisher("/camera_info", CameraInfo, queue_size = 1)
+        self.redistributeCameraInfo2 = rospy.Publisher("/camera_rect/camera_info", CameraInfo, queue_size = 1)
+        
+
         self.pub = rospy.Publisher("/image_raw", Image, queue_size = 1)
         self.pub2 = rospy.Publisher("/image_color", Image, queue_size = 1)
 
         # Redistributes the rectified image to the april tags detector
-        self.rectifiedDistributor = rospy.Subscriber( "/image_rect_color", Image, self.distributeRectified )
-        self.publishRectified = rospy.Publisher( "/camera/image_rect", Image, queue_size = 1   )
+        self.rectifiedDistributor = rospy.Subscriber( "/image_rect", Image, self.distributeRectified )
+        self.publishRectified = rospy.Publisher( "/camera_rect/image_rect", Image, queue_size = 1   )
+
+        # /camera_rect/image_rect 
+        
         
 
         # Subscribe to YOLO ROS's description of where the objects are 
