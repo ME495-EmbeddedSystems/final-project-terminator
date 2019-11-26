@@ -1,0 +1,195 @@
+#!/usr/bin/env python
+
+
+import sys
+import rospy
+import copy
+import baxter_interface
+import moveit_commander
+import moveit_msgs.msg
+import geometry_msgs.msg
+from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
+from std_msgs.msg import String, Bool
+from moveit_commander.conversions import pose_to_list
+from baxter_interface import Gripper, CHECK_VERSION
+
+
+
+class AimTarget(object):
+	""" manipulates baxters left arm """
+
+	def __init__(self):
+
+		rospy.loginfo("Ready for aim_target")
+		super(AimTarget, self).__init__()
+		# First initialize moveit_commander and a rospy node:
+		moveit_commander.roscpp_initialize(sys.argv)
+		rospy.init_node("aim_target", anonymous=True)
+		# Instantiate a RobotCommander object. 
+		joint_state_topic = ['joint_states:=/robot/joint_states']
+		moveit_commander.roscpp_initialize(joint_state_topic)
+		# self.add_box()
+		self.robot = moveit_commander.RobotCommander()
+		# Instantiate a PlanningSceneInterface object. 
+		self.scene = moveit_commander.PlanningSceneInterface()
+		# Instantiate a MoveGroupCommander object. This object is an interface to a planning group
+		baxter_interface.RobotEnable().enable()
+		rospy.sleep(0.25)
+		rospy.loginfo("Ready for aim_target")
+
+		self.aim_the_target = moveit_commander.MoveGroupCommander('left_arm')
+		self.aim_the_target.set_goal_position_tolerance(0.01)
+		self.aim_the_target.set_goal_orientation_tolerance(0.01)
+		self.aim_the_target.set_planner_id('RRTConnectkConfigDefault')
+		# self.aim_the_target.set_planning_time(30)
+		# self.aim_the_target.allow_replanning(True)
+		# self.aim_the_target.set_max_velocity_scaling_factor(0.6)
+		# self.aim_the_target.set_max_acceleration_scaling_factor(0.6)
+
+		# trajectory in RVIZ
+		self.display_trajectory_publisher = rospy.Publisher(
+			'/move_group/display_planned_path',
+			moveit_msgs.msg.DisplayTrajectory,
+			queue_size=20)
+		# get the name of the reference frame for this robot:
+		planning_frame = self.aim_the_target.get_planning_frame()
+		print "============ Planning frame: %s" % planning_frame     
+
+	
+		# subscribe to targetBox
+		# self.gun_pose_sub = rospy.Subscriber("/targetBox", BoundingBoxes, self.aim_goal)
+
+	   
+
+	# def aim_goal(self, msg):
+	#     """ callback for the target position
+	#     Args:
+	#    
+	#     """
+
+
+
+
+
+
+	def aim_goal(self):
+		""" moves baxters left end effector to a pose goal """
+
+
+	
+		aim_goal = geometry_msgs.msg.Pose()
+
+		aim_goal.orientation.x = -0.618235
+		aim_goal.orientation.y = 0.784464
+		aim_goal.orientation.z = 0.016503
+		aim_goal.orientation.w = 0.0461452
+
+		aim_goal.position.x = -0.205829
+		aim_goal.position.y = 0.654037
+		aim_goal.position.z = -0.389637
+
+		self.aim_the_target.set_pose_target(aim_goal)
+		# self.aim_the_target.set_start_state_to_current_state()        
+		# plan to path goal
+
+		plan = self.aim_the_target.plan()
+		self.display_trajectory(plan)
+
+		# execute plan
+		confirmed = raw_input('Execute aim_target? y/n')
+		if confirmed == "y":
+			self.aim_the_target.execute(plan, wait=True)        
+			self.aim_the_target.stop()
+			self.aim_the_target.clear_pose_targets()
+
+		current_pose = self.aim_the_target.get_current_pose().pose
+		print("current_pose is:")
+		print(current_pose)
+		print("the goal pose is :")
+		print(aim_goal)
+
+		if self.check_aim(aim_goal, current_pose):
+			print("Aiming!")
+
+		else:
+			print("Not Aiming!")
+
+
+		
+
+	def display_trajectory(self, plan):
+		""" Published planned trajectory in rviz
+		Args:
+			plan (): motion plan to goal
+		"""
+
+		display_traj = moveit_msgs.msg.DisplayTrajectory()
+		display_traj.trajectory_start = self.robot.get_current_state()
+		display_traj.trajectory.append(plan)
+		self.display_trajectory_publisher.publish(display_traj);
+
+	def check_aim(self, goal, actual):
+		""" Test if end effector made it to target
+		Args:
+		goal (Pose): target for robot
+		actual (Pose): where robot actually is
+		Returns:
+		bool: True for success
+		"""
+
+		goal = pose_to_list(goal)
+		actual = pose_to_list(actual)
+
+		for index in range(len(goal)):
+			if abs(actual[index] - goal[index]) > 0.01:
+				return False
+
+		return True
+	
+	
+		# return self.wait_for_state_update(box_is_known=True, timeout=timeout)
+  
+
+	# def add_box(self, timeout=4):
+	#     """ Adds a box to rviz """
+
+	#     # Add Objects to Planning Scene
+	#     self.box_name = 'table'
+	#     self.box_pose = PoseStamped()
+	#     # Can reference to base frame
+	#     # Or can reference to EE finger frame
+	#     # for grasping
+	#     self.box_pose.header.frame_id = "base"
+	#     self.box_pose.pose.position.x = 0.5
+	#     self.box_pose.pose.position.z = -0.3095
+	#     self.box_pose.pose.orientation.w = 1.0
+	#     # Length, Width, Height
+	#     self.scene.add_box(self.box_name, self.box_pose, size=(0.6, 0.8, 0.1))
+	#     # return self.wait_for_state_update(box_is_known=True, timeout=timeout)
+
+
+
+def main():
+
+	try:
+		aim_target = AimTarget()
+		action = raw_input("(A)im the target?")
+		if (action == "A"):
+			aim_target.aim_goal()
+
+	except rospy.ROSInterruptException:
+		return
+	except KeyboardInterrupt:
+		return
+
+	rospy.spin()
+
+
+if __name__ == '__main__':
+	main()
+
+
+
+
+
+

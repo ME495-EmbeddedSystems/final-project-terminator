@@ -10,7 +10,7 @@ SUBSCRIBERS:
     +
 """
 
-#from __future__ import division
+from __future__ import division
 
 import sys
 import copy
@@ -62,17 +62,23 @@ class LeftArm(object):
         # add table
         self.add_box()
 
+        self.tag = 0.0873125
+
 
         self.left_group = moveit_commander.MoveGroupCommander("left_arm")
 
         # Planning and Execution parameters
-        self.tolerance = 0.01
-        self.left_group.set_goal_position_tolerance(self.tolerance)
-        self.left_group.set_goal_orientation_tolerance(self.tolerance)
-        self.left_group.set_planning_time(5.0)
+        self.position_tol = 0.05
+        self.orientation_tol = 0.3
+
+        self.tolerance = self.orientation_tol
+
+        self.left_group.set_goal_position_tolerance(self.position_tol)
+        self.left_group.set_goal_orientation_tolerance(self.orientation_tol)
+        self.left_group.set_planning_time(10.0)
         self.left_group.allow_replanning(True)
-        self.left_group.set_max_velocity_scaling_factor(0.6)
-        self.left_group.set_max_acceleration_scaling_factor(0.6)
+        self.left_group.set_max_velocity_scaling_factor(0.2)
+        self.left_group.set_max_acceleration_scaling_factor(0.2)
 
         # gripper
         self.left_gripper = Gripper('left', CHECK_VERSION)
@@ -101,22 +107,6 @@ class LeftArm(object):
 
         print("done initializing")
 
-        #self.robot_state = self.robot.get_current_state()
-        #print(self.robot_state)
-        #print(self.left_group.get_current_pose().pose)
-        #rospy.sleep(3)
-
-
-        """
-        self.planning_frame = self.left_group.get_planning_frame()
-        rospy.loginfo("========== Reference frame: %s" % self.planning_frame)
-        # Get End Effector link name for this group
-        self.eef_link = self.left_group.get_end_effector_link()
-        rospy.loginfo("========== End effector: %s" % self.eef_link)
-        # Get list of all groups in the robot
-        self.group_names = self.robot.get_group_names()
-        rospy.loginfo("========== Robot Groups: %s" % self.robot.get_group_names())
-        """
 
 
     def gun_callback(self, msg):
@@ -154,23 +144,43 @@ class LeftArm(object):
         # move EE right behind gun and stop
         pose_goal = geometry_msgs.msg.Pose()
 
+        """
         # move hand to standoff behind the gun
         pose_goal.orientation.x = quat[0]
         pose_goal.orientation.y = quat[1]
         pose_goal.orientation.z = quat[2]
         pose_goal.orientation.w = quat[3]
 
-        #"""
-        pose_goal.orientation.x = 0.05
-        pose_goal.orientation.y = 0.70
-        pose_goal.orientation.z = 0.028
-        pose_goal.orientation.w = 0.72
-        #"""
+        pose_goal.orientation.x = -0.017
+        pose_goal.orientation.y = 0.72
+        pose_goal.orientation.z = -0.002
+        pose_goal.orientation.w = 0.70
+        """
 
-        pose_goal.position.x = trans[0]
-        pose_goal.position.y = trans[1]
-        pose_goal.position.z = trans[2]
+        pose_goal.position.x = trans[0] - self.standoff
+        pose_goal.position.y = trans[1] + self.tag/2
+        pose_goal.position.z = trans[2] + self.tag/2
 
+        """
+        pose_goal.position.x = 0.86
+        pose_goal.position.y = 0.5
+        pose_goal.position.z = -0.23
+        """
+
+
+        #pose_goal.orientation.w = 0.1
+
+        #"""
+        pose_goal.orientation.x = 0.027
+        pose_goal.orientation.y = 0.76
+        pose_goal.orientation.z = -0.020
+        pose_goal.orientation.w = 0.65
+        #"""
+        """
+        pose_goal.position.x = 0.97
+        pose_goal.position.y = 0.30
+        pose_goal.position.z = -0.15
+        """
 
         print("-------------")
         print("current goal")
@@ -187,6 +197,8 @@ class LeftArm(object):
         self.left_group.stop()
         self.left_group.clear_pose_targets()
 
+        rospy.sleep(2)
+
         # test if made it to pre-pick up position
         left_EE_pose = self.left_group.get_current_pose().pose
         if self.made_it(pose_goal, left_EE_pose):
@@ -202,13 +214,10 @@ class LeftArm(object):
 
 
         # position EE at handle of gun
-        pose_goal.orientation.x = quat[0]
-        pose_goal.orientation.y = quat[1]
-        pose_goal.orientation.z = quat[2]
-        pose_goal.orientation.w = quat[3]
+
         pose_goal.position.x = trans[0]
-        pose_goal.position.y = trans[1]
-        pose_goal.position.z = trans[2]
+        pose_goal.position.y = trans[1] + self.tag/2
+        pose_goal.position.z = trans[2] + self.tag/2
 
 
         self.left_group.set_pose_target(pose_goal)
