@@ -10,7 +10,7 @@ SUBSCRIBERS:
     +
 """
 
-#from __future__ import division
+from __future__ import division
 
 import sys
 import copy
@@ -97,26 +97,10 @@ class LeftArm(object):
 
 
         # subscribe to gun pose
-        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
+        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
 
         print("done initializing")
 
-        #self.robot_state = self.robot.get_current_state()
-        #print(self.robot_state)
-        #print(self.left_group.get_current_pose().pose)
-        #rospy.sleep(3)
-
-
-        """
-        self.planning_frame = self.left_group.get_planning_frame()
-        rospy.loginfo("========== Reference frame: %s" % self.planning_frame)
-        # Get End Effector link name for this group
-        self.eef_link = self.left_group.get_end_effector_link()
-        rospy.loginfo("========== End effector: %s" % self.eef_link)
-        # Get list of all groups in the robot
-        self.group_names = self.robot.get_group_names()
-        rospy.loginfo("========== Robot Groups: %s" % self.robot.get_group_names())
-        """
 
 
     def gun_callback(self, msg):
