@@ -68,7 +68,7 @@ class LeftArm(object):
         self.left_group = moveit_commander.MoveGroupCommander("left_arm")
 
         # Planning and Execution parameters
-        self.position_tol = 0.05
+        self.position_tol = 0.01
         self.orientation_tol = 0.3
 
         self.tolerance = self.orientation_tol
@@ -77,8 +77,8 @@ class LeftArm(object):
         self.left_group.set_goal_orientation_tolerance(self.orientation_tol)
         self.left_group.set_planning_time(10.0)
         self.left_group.allow_replanning(True)
-        self.left_group.set_max_velocity_scaling_factor(0.2)
-        self.left_group.set_max_acceleration_scaling_factor(0.2)
+        self.left_group.set_max_velocity_scaling_factor(0.4)
+        self.left_group.set_max_acceleration_scaling_factor(0.4)
 
         # gripper
         self.left_gripper = Gripper('left', CHECK_VERSION)
@@ -235,6 +235,8 @@ class LeftArm(object):
         print(fraction)
 
         self.display_trajectory(plan)
+
+        rospy.sleep(2)
 
         print("============ Press `Enter` to finish movement")
         raw_input()
