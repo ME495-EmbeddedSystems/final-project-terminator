@@ -103,7 +103,8 @@ class LeftArm(object):
 
 
         # subscribe to gun pose
-        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
+        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
+        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal_waypoints)
 
         print("done initializing")
 
@@ -117,6 +118,142 @@ class LeftArm(object):
         """
         #self.go_to_goal(msg)
         pass
+
+
+    def plan_cartesian_path(self, left_EE_pose, goal):
+        """ plans a cartesian path using waypoints """
+
+        print("lets plan")
+
+        iter = 100
+        waypoints = []
+
+        xiter = np.linspace(left_EE_pose.position.x, goal.position.x, iter)
+        yiter = np.linspace(left_EE_pose.position.y, goal.position.y, iter)
+        ziter = np.linspace(left_EE_pose.position.z, goal.position.z, iter)
+
+        for i in range(iter):
+            p = copy.deepcopy(left_EE_pose)
+            p.position.x = xiter[i]
+            p.position.y = yiter[i]
+            p.position.z = ziter[i]
+
+            # last waypoint use pose of goal
+            if i == iter - 1:
+
+                p = copy.deepcopy(goal)
+                p.position.x = xiter[i]
+                p.position.y = yiter[i]
+                p.position.z = ziter[i]
+
+            waypoints.append(p)
+
+
+        plan, fraction = self.left_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+
+        return plan, fraction
+
+
+
+
+
+    def test_waypoints(self):
+        """ moves baxters left end effector to a pose goal """
+
+
+        # comput transformation of EE relative to baxter
+        left_EE_pose = self.left_group.get_current_pose().pose
+        print("EE pose")
+        print(left_EE_pose)
+
+
+        # move EE right behind gun and stop
+        pose_goal = geometry_msgs.msg.Pose()
+
+        pose_goal.position.x = 0.4
+        pose_goal.position.y = 0.1
+        pose_goal.position.z = 0.4
+
+        pose_goal.orientation.w = 1
+
+
+
+        plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
+
+        print("The fraction")
+        print(fraction)
+
+        self.display_trajectory(plan)
+
+        print("============ Press `Enter` to finish movement")
+        raw_input()
+
+        # execute path
+        self.left_group.execute(plan, wait=True)
+        self.left_group.stop()
+        self.left_group.clear_pose_targets()
+
+
+
+    def go_to_goal_waypoints(self, msg):
+        """ moves baxters left end effector to a pose goal """
+
+        # compute transformation of gun relative to EE
+        Teg = self.get_transform(msg)
+
+        # comput transformation of EE relative to baxter
+        left_EE_pose = self.left_group.get_current_pose().pose
+        print("EE pose")
+        print(left_EE_pose)
+
+        Tbe = self.get_transform(left_EE_pose)
+        # tranformation from baxter to gun
+        Tbg = np.dot(Tbe, Teg)
+
+        # pose of gun relative to baxter
+        quat, trans = self.extract_pose(Tbg)
+
+
+        # move EE right behind gun and stop
+        pose_goal = geometry_msgs.msg.Pose()
+
+
+        pose_goal.position.x = trans[0] - self.standoff
+        pose_goal.position.y = trans[1] + self.tag/2
+        pose_goal.position.z = trans[2] + self.tag/2
+
+        pose_goal.orientation.x = 0.027
+        pose_goal.orientation.y = 0.76
+        pose_goal.orientation.z = -0.020
+        pose_goal.orientation.w = 0.65
+
+
+
+        plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
+
+        print("The fraction")
+        print(fraction)
+
+        self.display_trajectory(plan)
+
+        print("============ Press `Enter` to finish movement")
+        raw_input()
+
+        # execute path
+        self.left_group.execute(plan, wait=True)
+        self.left_group.stop()
+        self.left_group.clear_pose_targets()
+
+
+        rospy.sleep(4)
+
+        # test if made it to pre-pick up position
+        left_EE_pose = self.left_group.get_current_pose().pose
+        if self.made_it(pose_goal, left_EE_pose):
+            print("End Effector Behind gun!")
+
+        else:
+            print("End Effector did Not make it to gun!")
 
 
 
@@ -367,7 +504,7 @@ def main():
         #print("============ Press `Enter` to execute a movement using a pose goal")
         #raw_input()
         #left_arm.go_to_goal()
-
+        #left_arm.test_waypoints()
 
         #print("============ Press `Enter` to close left gripper")
         #raw_input()
