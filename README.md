@@ -9,6 +9,8 @@ run `rosrun baxter_interface joint_trajectory_action_server.py` to start the joi
 
 run `roslaunch baxter_moveit_config baxter_grippers.launch` to bringup robot
 
+run `rosrun terminator aim_target` to aiming the target
+
 WHEN RUNNING ON REAL ROBOT(make sure it's wire connected):
 
 run `cd ~/rosfinalproject/src/terminator`to go into my package
