@@ -97,7 +97,7 @@ class LeftArm(object):
 
 
         # subscribe to gun pose
-        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
+        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
 
         print("done initializing")
 
@@ -161,10 +161,10 @@ class LeftArm(object):
         pose_goal.orientation.w = quat[3]
 
         #"""
-        pose_goal.orientation.x = 0.05
+        pose_goal.orientation.x = 0.005
         pose_goal.orientation.y = 0.70
-        pose_goal.orientation.z = 0.028
-        pose_goal.orientation.w = 0.72
+        pose_goal.orientation.z = 0.000
+        pose_goal.orientation.w = 0.70
         #"""
 
         pose_goal.position.x = trans[0]
