@@ -94,7 +94,7 @@ class LeftArm(object):
         self.orientation_w = 0.65
 
         # Amount to pull back pre and post grip (approach, retreat)
-        self.standoff = 0.2
+        self.standoff = 0.1
 
 
         # trajectory in RVIZ
@@ -149,7 +149,8 @@ class LeftArm(object):
         """ plans a cartesian path using waypoints
 
         Args:
-
+            left_EE_pose (Pose): pose of the left end effector
+            goal (Pose): pose of the goal configuration
 
         """
 
@@ -178,52 +179,15 @@ class LeftArm(object):
 
             waypoints.append(p)
 
+        #self.left_group.set_max_velocity_scaling_factor(0.1)
+        #self.left_group.set_max_acceleration_scaling_factor(0.1)
 
         plan, fraction = self.left_group.compute_cartesian_path(waypoints, 0.01, 0.0)
 
+        #self.left_group.set_max_velocity_scaling_factor(0.6)
+        #self.left_group.set_max_acceleration_scaling_factor(0.6)
+
         return plan, fraction
-
-
-
-
-
-    def test_waypoints(self):
-        """ moves baxters left end effector to a pose goal """
-
-
-        # comput transformation of EE relative to baxter
-        left_EE_pose = self.left_group.get_current_pose().pose
-        print("EE pose")
-        print(left_EE_pose)
-
-
-        # move EE right behind gun and stop
-        pose_goal = geometry_msgs.msg.Pose()
-
-        pose_goal.position.x = 0.4
-        pose_goal.position.y = 0.1
-        pose_goal.position.z = 0.4
-
-        pose_goal.orientation.w = 1
-
-
-
-        plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
-
-        print(plan)
-
-        print("The fraction")
-        print(fraction)
-
-        self.display_trajectory(plan)
-
-        print("============ Press `Enter` to finish movement")
-        raw_input()
-
-        # execute path
-        self.left_group.execute(plan, wait=True)
-        self.left_group.stop()
-        self.left_group.clear_pose_targets()
 
 
 
@@ -271,6 +235,10 @@ class LeftArm(object):
 
         # develop a trajectory of waypoints
         plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
+
+        if fraction < 0.8:
+            print("replanning")
+            plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
 
         print("The fraction")
         print(fraction)
@@ -349,16 +317,75 @@ class LeftArm(object):
 
 
     def pick_up_gun(self, msg):
+        """
+        The trajectory is divided into three stages
 
+        1) move gripper to standoff location
+        2) move gripper to handle
+        3) grasp the gun
+        4) pick up gun vertically to standoff location
+
+        Args:
+            msg (Pose): pose of the april tag
+        """
+
+        # stage 1
+        print("============ Move to gun ============")
+        pre_grasp = self.move_gripper(msg, pre_standoff=True)
+
+        # stage 2
+        print("============ Move to gun handle ============")
+        grasp_handle = self.move_gripper(msg)
+
+        # stage 3
+        if pre_grasp and grasp_handle:
+            print("============ Press `Enter` to close left gripper ============")
+            raw_input()
+            self.left_gripper.close()
+            rospy.sleep(2)
+
+        # stage 4
+        print("============ Lift gun off Table ============")
+        post_grasp = self.move_gripper(msg, post_standoff=True)
+
+
+
+
+    def move_gripper(self, msg, pre_standoff=False, post_standoff=False):
+        """ moves gripper to a goal pose
+
+        Args:
+            msg (Pose): pose of the april tag
+
+        Returns:
+            success (bool): True gripper makes it to pre-grasp standoff pose
+        """
+
+
+        # get pose of EE
         left_EE_pose = self.left_group.get_current_pose().pose
 
         # move EE right behind gun and stop
         pose_goal = geometry_msgs.msg.Pose()
 
-        # translation is based on location of April tag
-        pose_goal.position.x = msg.position.x + left_EE_pose.position.x - self.standoff
-        pose_goal.position.y = msg.position.y + left_EE_pose.position.y + self.tag/2
-        pose_goal.position.z = msg.position.z + left_EE_pose.position.z + self.tag/2
+        if pre_standoff:
+            # translation is based on location of April tag
+            pose_goal.position.x = msg.position.x + left_EE_pose.position.x - self.standoff
+            pose_goal.position.y = msg.position.y + left_EE_pose.position.y + self.tag/2
+            pose_goal.position.z = msg.position.z + left_EE_pose.position.z + self.tag/2
+
+        elif post_standoff:
+            # lift gun off table vertically
+            pose_goal.position.x = left_EE_pose.position.x
+            pose_goal.position.y = left_EE_pose.position.y
+            pose_goal.position.z = left_EE_pose.position.z + self.standoff
+
+        else:
+            # move to grasp pose
+            pose_goal.position.x = left_EE_pose.position.x + self.standoff
+            pose_goal.position.y = left_EE_pose.position.y
+            pose_goal.position.z = left_EE_pose.position.z
+
 
         # use pre-defined orientation
         pose_goal.orientation.x = self.orientation_x
@@ -372,7 +399,7 @@ class LeftArm(object):
             # develop a trajectory of waypoints
             plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
 
-            print("The fraction")
+            print("The fraction of path covered")
             print(fraction)
 
             # display plan in rviz
@@ -380,7 +407,7 @@ class LeftArm(object):
 
             rospy.sleep(2)
 
-            print("============ Press `Enter` to move gripper to gun ============")
+            print("============ Press `Enter` to move gripper ============")
             raw_input()
 
             try:
@@ -399,150 +426,23 @@ class LeftArm(object):
             left_EE_pose = self.left_group.get_current_pose().pose
 
             if self.made_it(pose_goal, left_EE_pose):
-                print("End Effector Behind gun!")
+                print("Goal Reached")
                 success = True
 
             else:
-                print("End Effector did Not make it to gun!")
+                print("Goal Not Reached!")
                 print("EE pose")
                 print(left_EE_pose)
 
                 print("Goal")
                 print(pose_goal)
 
+        return success
 
 
 
 
-    def go_to_goal(self, msg):
-        """ moves baxters left end effector to a pose goal """
 
-
-        # compute transformation of gun relative to EE
-        Teg = self.get_transform(msg)
-
-        # comput transformation of EE relative to baxter
-        left_EE_pose = self.left_group.get_current_pose().pose
-        print("EE pose")
-        print(left_EE_pose)
-
-        Tbe = self.get_transform(left_EE_pose)
-        # tranformation from baxter to gun
-        Tbg = np.dot(Tbe, Teg)
-
-        # pose of gun relative to baxter
-        quat, trans = self.extract_pose(Tbg)
-
-
-        # move EE right behind gun and stop
-        pose_goal = geometry_msgs.msg.Pose()
-
-        """
-        # move hand to standoff behind the gun
-        pose_goal.orientation.x = quat[0]
-        pose_goal.orientation.y = quat[1]
-        pose_goal.orientation.z = quat[2]
-        pose_goal.orientation.w = quat[3]
-
-        pose_goal.orientation.x = -0.017
-        pose_goal.orientation.y = 0.72
-        pose_goal.orientation.z = -0.002
-        pose_goal.orientation.w = 0.70
-        """
-
-        pose_goal.position.x = trans[0] - self.standoff
-        pose_goal.position.y = trans[1] + self.tag/2
-        pose_goal.position.z = trans[2] + self.tag/2
-
-        """
-        pose_goal.position.x = 0.86
-        pose_goal.position.y = 0.5
-        pose_goal.position.z = -0.23
-        """
-
-
-        #pose_goal.orientation.w = 0.1
-
-        #"""
-        pose_goal.orientation.x = 0.027
-        pose_goal.orientation.y = 0.76
-        pose_goal.orientation.z = -0.020
-        pose_goal.orientation.w = 0.65
-        #"""
-        """
-        pose_goal.position.x = 0.97
-        pose_goal.position.y = 0.30
-        pose_goal.position.z = -0.15
-        """
-
-        print("-------------")
-        print("current goal")
-        print(pose_goal)
-
-        self.left_group.set_pose_target(pose_goal)
-
-        # plan to path goal
-        plan = self.left_group.plan()
-        self.display_trajectory(plan)
-
-        # execute path
-        self.left_group.execute(plan, wait=True)
-        self.left_group.stop()
-        self.left_group.clear_pose_targets()
-
-        rospy.sleep(2)
-
-        # test if made it to pre-pick up position
-        left_EE_pose = self.left_group.get_current_pose().pose
-        if self.made_it(pose_goal, left_EE_pose):
-            print("End Effector Behind gun!")
-
-        else:
-            print("End Effector did Not make it to gun!")
-
-
-        print("============ Left Gripper Behind Gun")
-        print("============ Press `Enter` to finish movement")
-        raw_input()
-
-
-        # position EE at handle of gun
-
-        pose_goal.position.x = trans[0]
-        pose_goal.position.y = trans[1] + self.tag/2
-        pose_goal.position.z = trans[2] + self.tag/2
-
-
-        self.left_group.set_pose_target(pose_goal)
-
-        # plan to goal
-        plan = self.left_group.plan()
-        self.display_trajectory(plan)
-
-        # execute path
-        self.left_group.execute(plan, wait=True)
-        self.left_group.stop()
-        self.left_group.clear_pose_targets()
-
-
-        rospy.sleep(2)
-
-
-        #current_pose = self.left_group.get_current_pose(self.left_group.get_end_effector_link()).pose
-        left_EE_pose = self.left_group.get_current_pose().pose
-        print(left_EE_pose)
-        #print(self.left_group.get_end_effector_link())
-
-        if self.made_it(pose_goal, left_EE_pose):
-            print("Ready to grasp gun!")
-
-        else:
-            print("Not ready to grasp gun!")
-
-
-        print("============ Press `Enter` to close left gripper")
-        raw_input()
-        self.left_gripper.close()
 
 
 
@@ -560,53 +460,6 @@ class LeftArm(object):
 
 
 
-    def get_transform(self, pose):
-        """ computes the transformation matrix given a pose msg
-
-        Args:
-            pose (Pose): pose of a rigid body
-
-        Returns:
-            T (np.array): homogenous transformation matrix
-        """
-
-        quat_list = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
-
-        homo_rot = quaternion_matrix(quat_list)
-
-        T = np.array([[homo_rot[0][0], homo_rot[0][1], homo_rot[0][2], pose.position.x],
-                      [homo_rot[1][0], homo_rot[1][1], homo_rot[1][2], pose.position.y],
-                      [homo_rot[2][0], homo_rot[2][1], homo_rot[2][2], pose.position.z],
-                      [0,              0,              0,              1]])
-
-
-        return T
-
-
-    def extract_pose(self, T):
-        """ extracts the quaternion and translation vector from a homogenous
-        tranformation matrix
-
-        Args:
-            T (np.array): homogenous transformation matrix
-
-        Returns:
-            quat (np.array): quaternion represting orientation of rigid body
-            trans (np.array): translation vector represting position of rigid body
-        """
-
-        # extract euler angles
-        rot = np.array([[T[0][0], T[0][1], T[0][2]],
-                        [T[1][0], T[1][1], T[1][2]],
-                        [T[2][0], T[2][1], T[2][2]]])
-
-
-        ax, ay, az = euler_from_matrix(rot)
-        quat = quaternion_from_euler(ax, ay, az)
-
-        trans = np.array([T[0][3], T[1][3], T[2][3]])
-
-        return quat, trans
 
 
     def made_it(self, goal, actual):
@@ -662,7 +515,7 @@ def main():
         msg.orientation.z = -0.020
         msg.orientation.w = 0.65
 
-        msg.position.x = 0.7
+        msg.position.x = 0.5
         msg.position.y = 0
         msg.position.z = 0
 
@@ -685,18 +538,6 @@ if __name__ == '__main__':
     main()
 
 
-
-
-"""
-pose_goal.orientation.x = 0.70
-pose_goal.orientation.y = 0.027
-pose_goal.orientation.z = 0.713
-pose_goal.orientation.w = 0.04
-
-pose_goal.position.x = 0.4 - self.standoff
-pose_goal.position.y = 0.1
-pose_goal.position.z = 0.4
-"""
 
 
 
