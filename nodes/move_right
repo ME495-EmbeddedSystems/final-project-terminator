@@ -1,0 +1,277 @@
+#!/usr/bin/env python
+
+
+"""
+
+PUBLSIHERS:
+    +
+
+SUBSCRIBERS:
+    +
+"""
+
+from __future__ import division
+
+import sys
+import copy
+import rospy
+import moveit_commander
+import moveit_msgs.msg
+from moveit_msgs.msg import Grasp
+import geometry_msgs.msg
+from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
+import numpy as np
+from std_msgs.msg import String, Bool
+from moveit_commander.conversions import pose_to_list
+import baxter_interface
+from baxter_interface import Gripper, CHECK_VERSION
+from sensor_msgs.msg import Range
+import tf.transformations as tr
+from tf.transformations import quaternion_matrix
+from tf.transformations import quaternion_from_euler
+from tf.transformations import euler_from_matrix
+
+
+
+class RightArm(object):
+    """ manipulates the right arm """
+
+    def __init__(self):
+
+        rospy.loginfo("Initializing Baxter")
+        super(RightArm, self).__init__()
+
+        #joint_state_topic = ['joint_states:=/joint_states_desired']
+        joint_state_topic = ['joint_states:=/robot/joint_states']
+        moveit_commander.roscpp_initialize(joint_state_topic)
+
+        rospy.init_node("right_arm", anonymous=True)
+
+
+        # TODO: move this to the commander main node
+        baxter_interface.RobotEnable().enable()
+        rospy.sleep(0.25)
+        print("Baxter is enabled")
+
+        moveit_commander.roscpp_initialize(sys.argv)
+        self.robot = moveit_commander.RobotCommander()
+        self.scene = moveit_commander.PlanningSceneInterface()
+
+
+        self.right_group = moveit_commander.MoveGroupCommander("right_arm")
+
+        # left group is only to read pose of the gripper to
+        # help position the right gripper
+        self.left_group = moveit_commander.MoveGroupCommander("left_arm")
+
+        # Planning and Execution parameters
+        self.position_tol = 0.03
+        self.orientation_tol = 0.3
+
+        self.right_group.set_goal_position_tolerance(self.position_tol)
+        self.right_group.set_goal_orientation_tolerance(self.orientation_tol)
+        self.right_group.set_planning_time(10.0)
+        self.right_group.allow_replanning(True)
+        self.right_group.set_max_velocity_scaling_factor(0.2)
+        self.right_group.set_max_acceleration_scaling_factor(0.1)
+
+
+        # gripper
+        self.right_gripper = Gripper('right', CHECK_VERSION)
+        # Reboot Gripper
+        self.right_gripper.reboot()
+        # Calibrate Gripper
+        self.right_gripper.calibrate()
+        # Open Gripper
+        self.right_gripper.open()
+
+
+        # trajectory in RVIZ
+        self.display_trajectory_publisher = rospy.Publisher(
+            '/move_group/display_planned_path',
+            moveit_msgs.msg.DisplayTrajectory,
+            queue_size=20)
+
+
+        # place arm in init position
+        self.arm_init_position()
+
+        print("Done Initializing Baxter")
+
+
+
+    def arm_init_position(self):
+        """ places right arm is a predefined position during start up """
+
+        print("Moving right arm to initial pose")
+        pose_goal = geometry_msgs.msg.Pose()
+        pose_goal.orientation.x = -0.41
+        pose_goal.orientation.y = 0.60
+        pose_goal.orientation.z = 0.35
+        pose_goal.orientation.w = 0.58
+
+        pose_goal.position.x = 0.68
+        pose_goal.position.y = -0.25
+        pose_goal.position.z = 0.30
+
+        right_EE_pose = self.right_group.get_current_pose().pose
+
+        plan, fraction = self.plan_cartesian_path(right_EE_pose, pose_goal)
+        print("Fraction of path covered to initial position")
+        print(fraction)
+
+        # execute path
+        self.right_group.execute(plan, wait=True)
+        #self.left_group.go(wait=True)
+        self.right_group.stop()
+        self.right_group.clear_pose_targets()
+
+        rospy.sleep(4)
+
+        right_EE_pose = self.right_group.get_current_pose().pose
+        if self.made_it(pose_goal, right_EE_pose):
+            print("Right Arm is in initial position")
+
+        else:
+            print("Right is Not in initial position")
+
+
+
+
+    def plan_cartesian_path(self, left_EE_pose, goal):
+        """ plans a cartesian path using waypoints
+
+        Args:
+            left_EE_pose (Pose): pose of the left end effector
+            goal (Pose): pose of the goal configuration
+
+        """
+
+        print("Terminator Planning Trajectory")
+
+        iter = 20
+        waypoints = []
+
+        xiter = np.linspace(left_EE_pose.position.x, goal.position.x, iter)
+        yiter = np.linspace(left_EE_pose.position.y, goal.position.y, iter)
+        ziter = np.linspace(left_EE_pose.position.z, goal.position.z, iter)
+
+        for i in range(iter):
+            p = copy.deepcopy(left_EE_pose)
+            p.position.x = xiter[i]
+            p.position.y = yiter[i]
+            p.position.z = ziter[i]
+
+            # last waypoint use pose of goal
+            if i == iter - 1:
+
+                p = copy.deepcopy(goal)
+                p.position.x = xiter[i]
+                p.position.y = yiter[i]
+                p.position.z = ziter[i]
+
+            waypoints.append(p)
+
+        #self.left_group.set_max_velocity_scaling_factor(0.1)
+        #self.left_group.set_max_acceleration_scaling_factor(0.1)
+
+        plan, fraction = self.right_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+
+        #self.left_group.set_max_velocity_scaling_factor(0.6)
+        #self.left_group.set_max_acceleration_scaling_factor(0.6)
+
+        return plan, fraction
+
+
+
+
+
+
+
+
+
+
+
+    def display_trajectory(self, plan):
+        """ Published planned trajectory in rviz
+
+        Args:
+            plan (): motion plan to goal
+        """
+
+        display_traj = moveit_msgs.msg.DisplayTrajectory()
+        display_traj.trajectory_start = self.robot.get_current_state()
+        display_traj.trajectory.append(plan)
+        self.display_trajectory_publisher.publish(display_traj)
+
+
+    def made_it(self, goal, actual):
+        """ Test if end effector made it to target
+
+        Args:
+        goal (Pose): target for robot
+        actual (Pose): where robot actually is
+
+        Returns:
+        bool: True for success
+        """
+
+        goal = pose_to_list(goal)
+        actual = pose_to_list(actual)
+
+        pos_goal = True
+        orient_goal = True
+
+        # check if final position is within tolerance
+        for index in range(3):
+            if abs(actual[index] - goal[index]) > self.position_tol:
+                pos_goal = False
+
+        # check if final orientation is within tolerance
+        for index in range(3, 6):
+            if abs(actual[index] - goal[index]) > self.orientation_tol:
+                orient_goal = False
+
+        if pos_goal and orient_goal:
+            return True
+
+        return False
+
+
+
+def main():
+
+    try:
+        right_arm = RightArm()
+
+    except rospy.ROSInterruptException:
+        return
+    except KeyboardInterrupt:
+        return
+
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
