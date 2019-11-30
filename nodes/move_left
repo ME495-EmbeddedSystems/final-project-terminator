@@ -47,7 +47,7 @@ class LeftArm(object):
 
         rospy.init_node("left_arm", anonymous=True)
 
-
+        # TODO: move this to the commander main node
         baxter_interface.RobotEnable().enable()
         rospy.sleep(0.25)
         print("Baxter is enabled")
@@ -92,7 +92,7 @@ class LeftArm(object):
         # self.orientation_y = 0.76
         # self.orientation_z = -0.020
         # self.orientation_w = 0.65
-        
+
         self.orientation_x = -0.003
         self.orientation_y = 0.696
         self.orientation_z = -0.0048
@@ -133,9 +133,9 @@ class LeftArm(object):
 
 
     def arm_init_position(self):
-        """ places arm is a predefined position during start up """
+        """ places left arm is a predefined position during start up """
 
-        print("Moving arm to initial pose")
+        print("Moving left arm to initial pose")
         pose_goal = geometry_msgs.msg.Pose()
         pose_goal.orientation.x = 0.065
         pose_goal.orientation.y = 0.766
@@ -159,7 +159,7 @@ class LeftArm(object):
         self.left_group.stop()
         self.left_group.clear_pose_targets()
 
-        rospy.sleep(4)
+        rospy.sleep(2)
 
         left_EE_pose = self.left_group.get_current_pose().pose
         if self.made_it(pose_goal, left_EE_pose):
@@ -369,7 +369,7 @@ class LeftArm(object):
         display_traj = moveit_msgs.msg.DisplayTrajectory()
         display_traj.trajectory_start = self.robot.get_current_state()
         display_traj.trajectory.append(plan)
-        self.display_trajectory_publisher.publish(display_traj);
+        self.display_trajectory_publisher.publish(display_traj)
 
 
 
