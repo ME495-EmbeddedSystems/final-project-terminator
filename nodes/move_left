@@ -92,7 +92,7 @@ class LeftArm(object):
         # self.orientation_y = 0.76
         # self.orientation_z = -0.020
         # self.orientation_w = 0.65
-        
+
         self.orientation_x = -0.003
         self.orientation_y = 0.696
         self.orientation_z = -0.0048
@@ -106,7 +106,7 @@ class LeftArm(object):
         self.vert_tg = 0.2413
 
         # position adjustment parameters
-        self.x_coord = 0.1143
+        self.x_coord = 0.127
         self.y_coord = 0.0762
         self.z_coord = 0.0254
 
