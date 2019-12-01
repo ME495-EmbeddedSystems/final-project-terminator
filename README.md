@@ -1,5 +1,12 @@
 # final-project-terminator
 
+# connecting and enabling 
+To connect to robot and enable it
+```
+source src/final-project-terminator/config/connect.sh
+```
+
+
 export ROS_MASTER_URI=http://10.42.0.2:11311
 export ROS_IP=10.42.0.1
 
