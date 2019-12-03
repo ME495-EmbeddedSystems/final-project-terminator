@@ -91,7 +91,8 @@ class AimTarget(object):
 		aim_goal.position.y = 0.531532
 		aim_goal.position.z = -0.10953
 	
-
+        ###########
+        
 		# possible position:
 
 		# aim_goal.orientation.x = -0.618235
