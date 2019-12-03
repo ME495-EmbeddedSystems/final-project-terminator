@@ -169,6 +169,7 @@ class imageProcessor:
         self.desiredGunPose = rospy.Publisher("/gun_pose", Pose, queue_size = 1 )
 
 # Main Function
+# This is where the main function begins
 if __name__ == "__main__":
     
     rospy.init_node("getCameraNode")
