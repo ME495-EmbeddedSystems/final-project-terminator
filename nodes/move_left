@@ -31,6 +31,7 @@ from tf.transformations import quaternion_matrix
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_matrix
 
+from terminator import*
 
 
 class LeftArm(object):
@@ -45,7 +46,6 @@ class LeftArm(object):
         joint_state_topic = ['joint_states:=/robot/joint_states']
         moveit_commander.roscpp_initialize(joint_state_topic)
 
-        rospy.init_node("left_arm", anonymous=True)
 
         # TODO: move this to the commander main node
         baxter_interface.RobotEnable().enable()
@@ -85,14 +85,6 @@ class LeftArm(object):
         # Open Gripper
         self.left_gripper.open()
 
-
-        # keep gripper is this orientation
-        # parallel to floor
-        # self.orientation_x = 0.027
-        # self.orientation_y = 0.76
-        # self.orientation_z = -0.020
-        # self.orientation_w = 0.65
-
         self.orientation_x = -0.003
         self.orientation_y = 0.696
         self.orientation_z = -0.0048
@@ -117,8 +109,21 @@ class LeftArm(object):
             queue_size=20)
 
 
+        # init pose goal for right EE
+        init_goal = geometry_msgs.msg.Pose()
+        init_goal.orientation.x = 0.065
+        init_goal.orientation.y = 0.766
+        init_goal.orientation.z = -0.022
+        init_goal.orientation.w = 0.639
+
+        init_goal.position.x = 0.415
+        init_goal.position.y = 0.531
+        init_goal.position.z = -0.15
+
+
+
         # place arm in init position
-        self.arm_init_position()
+        arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
 
         print("Done Initializing Baxter")
 
@@ -127,93 +132,6 @@ class LeftArm(object):
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal_waypoints)
         self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.pick_up_gun)
-
-
-
-
-
-    def arm_init_position(self):
-        """ places left arm is a predefined position during start up """
-
-        print("Moving left arm to initial pose")
-        pose_goal = geometry_msgs.msg.Pose()
-        pose_goal.orientation.x = 0.065
-        pose_goal.orientation.y = 0.766
-        pose_goal.orientation.z = -0.022
-        pose_goal.orientation.w = 0.639
-
-        pose_goal.position.x = 0.415
-        pose_goal.position.y = 0.531
-        pose_goal.position.z = -0.15
-
-        #self.left_group.set_pose_target(pose_goal)
-        left_EE_pose = self.left_group.get_current_pose().pose
-
-        plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
-        print("Fraction of path covered to initial position")
-        print(fraction)
-
-        # execute path
-        self.left_group.execute(plan, wait=True)
-        #self.left_group.go(wait=True)
-        self.left_group.stop()
-        self.left_group.clear_pose_targets()
-
-        rospy.sleep(2)
-
-        left_EE_pose = self.left_group.get_current_pose().pose
-        if self.made_it(pose_goal, left_EE_pose):
-            print("Left Arm is in initial position")
-
-        else:
-            print("Left is Not in initial position")
-
-
-
-
-    def plan_cartesian_path(self, left_EE_pose, goal):
-        """ plans a cartesian path using waypoints
-
-        Args:
-            left_EE_pose (Pose): pose of the left end effector
-            goal (Pose): pose of the goal configuration
-
-        """
-
-        print("Terminator Planning Trajectory")
-
-        iter = 20
-        waypoints = []
-
-        xiter = np.linspace(left_EE_pose.position.x, goal.position.x, iter)
-        yiter = np.linspace(left_EE_pose.position.y, goal.position.y, iter)
-        ziter = np.linspace(left_EE_pose.position.z, goal.position.z, iter)
-
-        for i in range(iter):
-            p = copy.deepcopy(left_EE_pose)
-            p.position.x = xiter[i]
-            p.position.y = yiter[i]
-            p.position.z = ziter[i]
-
-            # last waypoint use pose of goal
-            if i == iter - 1:
-
-                p = copy.deepcopy(goal)
-                p.position.x = xiter[i]
-                p.position.y = yiter[i]
-                p.position.z = ziter[i]
-
-            waypoints.append(p)
-
-        #self.left_group.set_max_velocity_scaling_factor(0.1)
-        #self.left_group.set_max_acceleration_scaling_factor(0.1)
-
-        plan, fraction = self.left_group.compute_cartesian_path(waypoints, 0.01, 0.0)
-
-        #self.left_group.set_max_velocity_scaling_factor(0.6)
-        #self.left_group.set_max_acceleration_scaling_factor(0.6)
-
-        return plan, fraction
 
 
     def pick_up_gun(self, msg):
@@ -265,14 +183,14 @@ class LeftArm(object):
         left_EE_pose = self.left_group.get_current_pose().pose
 
         # compute transformation of gun relative to EE
-        Teg = self.get_transform(msg)
+        Teg = get_transform(msg)
 
-        Tbe = self.get_transform(left_EE_pose)
+        Tbe = get_transform(left_EE_pose)
         # tranformation from baxter to gun
         Tbg = np.dot(Tbe, Teg)
 
         # pose of gun relative to baxter
-        quat, trans = self.extract_pose(Tbg)
+        quat, trans = extract_pose(Tbg)
 
 
         # move EE right behind gun and stop
@@ -315,13 +233,13 @@ class LeftArm(object):
 
         while not success:
             # develop a trajectory of waypoints
-            plan, fraction = self.plan_cartesian_path(left_EE_pose, pose_goal)
+            plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
 
             print("The fraction of path covered")
             print(fraction)
 
             # display plan in rviz
-            self.display_trajectory(plan)
+            display_trajectory(plan, self.robot, self.display_trajectory_publisher)
 
             rospy.sleep(2)
 
@@ -343,7 +261,7 @@ class LeftArm(object):
             # test if made it to pre-pick up position
             left_EE_pose = self.left_group.get_current_pose().pose
 
-            if self.made_it(pose_goal, left_EE_pose):
+            if made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol):
                 print("Goal Reached")
                 success = True
 
@@ -359,108 +277,10 @@ class LeftArm(object):
 
 
 
-    def display_trajectory(self, plan):
-        """ Published planned trajectory in rviz
-
-        Args:
-            plan (): motion plan to goal
-        """
-
-        display_traj = moveit_msgs.msg.DisplayTrajectory()
-        display_traj.trajectory_start = self.robot.get_current_state()
-        display_traj.trajectory.append(plan)
-        self.display_trajectory_publisher.publish(display_traj)
-
-
-
-    def made_it(self, goal, actual):
-        """ Test if end effector made it to target
-
-        Args:
-        goal (Pose): target for robot
-        actual (Pose): where robot actually is
-
-        Returns:
-        bool: True for success
-        """
-
-        goal = pose_to_list(goal)
-        actual = pose_to_list(actual)
-
-        pos_goal = True
-        orient_goal = True
-
-        # check if final position is within tolerance
-        for index in range(3):
-            if abs(actual[index] - goal[index]) > self.position_tol:
-                pos_goal = False
-
-        # check if final orientation is within tolerance
-        for index in range(3, 6):
-            if abs(actual[index] - goal[index]) > self.orientation_tol:
-                orient_goal = False
-
-        if pos_goal and orient_goal:
-            return True
-
-        return False
-
-
-
-    def get_transform(self, pose):
-        """ computes the transformation matrix given a pose msg
-
-        Args:
-            pose (Pose): pose of a rigid body
-
-        Returns:
-            T (np.array): homogenous transformation matrix
-        """
-
-        quat_list = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
-
-        homo_rot = quaternion_matrix(quat_list)
-
-        T = np.array([[homo_rot[0][0], homo_rot[0][1], homo_rot[0][2], pose.position.x],
-                      [homo_rot[1][0], homo_rot[1][1], homo_rot[1][2], pose.position.y],
-                      [homo_rot[2][0], homo_rot[2][1], homo_rot[2][2], pose.position.z],
-                      [0,              0,              0,              1]])
-
-        return T
-
-
-
-    def extract_pose(self, T):
-        """ extracts the quaternion and translation vector from a homogenous
-        tranformation matrix
-
-        Args:
-            T (np.array): homogenous transformation matrix
-
-        Returns:
-            quat (np.array): quaternion represting orientation of rigid body
-            trans (np.array): translation vector represting position of rigid body
-        """
-
-        # extract euler angles
-        rot = np.array([[T[0][0], T[0][1], T[0][2]],
-                        [T[1][0], T[1][1], T[1][2]],
-                        [T[2][0], T[2][1], T[2][2]]])
-
-
-        ax, ay, az = euler_from_matrix(rot)
-        quat = quaternion_from_euler(ax, ay, az)
-
-        trans = np.array([T[0][3], T[1][3], T[2][3]])
-
-        return quat, trans
-
-
-
 
 def main():
 
-    #rospy.init_node("left_arm", anonymous=True)
+    rospy.init_node("left_arm", anonymous=True)
 
     try:
         left_arm = LeftArm()
