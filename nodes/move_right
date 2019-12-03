@@ -85,6 +85,13 @@ class RightArm(object):
         # Open Gripper
         self.right_gripper.open()
 
+        # gripper position tuning parameters
+        self.d = 0.0762
+
+        self.x_coord = 0.1016
+        self.y_coord = 0.1143
+        self.z_coord = 0.0508
+
 
         # trajectory in RVIZ
         self.display_trajectory_publisher = rospy.Publisher(
@@ -137,8 +144,152 @@ class RightArm(object):
 
 
 
+    def position_trigger(self):
+        """ places the right gripper at the trigger
 
-    def plan_cartesian_path(self, left_EE_pose, goal):
+        1) move gripper to stand off location
+        2) place gripper on trigger
+
+        """
+
+        # stage 1
+        print("============ Move to gun ============")
+
+        right_EE_pose = self.right_group.get_current_pose().pose
+
+        # place perpendicular to the left end effector
+        left_EE_pose = self.left_group.get_current_pose().pose
+
+        # transform from baxter to left gripper
+        Tbl = self.get_transform(left_EE_pose)
+        #Tbr = self.get_transform(right_EE_pose)
+
+        #print("T from Baxter to Left Gripper")
+        #print(Tbl)
+
+        angle_x = -np.pi/2
+
+        # transform from baxter to right gripper standoff
+        T1 = np.array([[1,  0,               0,                     0],
+                       [0,  np.cos(angle_x), -np.sin(angle_x),      0],
+                       [0,  np.sin(angle_x),  np.cos(angle_x),      0],
+                       [0,  0,               0,                     1]])
+
+        T2 = np.array([[1, 0, 0,  -self.x_coord],
+                       [0, 1, 0,  self.y_coord],
+                       [0, 0, 1,  -self.z_coord],
+                       [0, 0, 0,  1]])
+
+        Tlrs = np.dot(T1, T2)
+
+
+        Tbrs = np.dot(Tbl, Tlrs)
+        #Tbrs = np.dot(Tbr, Tlrs)
+
+        #print("T from Baxter to Right Gripper Standoff")
+        #print(Tbrs)
+
+
+        quat, trans = self.extract_pose(Tbrs)
+
+        pose_goal = geometry_msgs.msg.Pose()
+
+        pose_goal.position.x = trans[0]
+        pose_goal.position.y = trans[1]
+        pose_goal.position.z = trans[2]
+
+        pose_goal.orientation.x = quat[0]
+        pose_goal.orientation.y = quat[1]
+        pose_goal.orientation.z = quat[2]
+        pose_goal.orientation.w = quat[3]
+
+
+        # plan from right EE to goal
+        plan, fraction = self.plan_cartesian_path(right_EE_pose, pose_goal)
+
+        print("The fraction of path covered")
+        print(fraction)
+
+        # display plan in rviz
+        self.display_trajectory(plan)
+
+        rospy.sleep(2)
+
+
+        print("============ Press `Enter` to move gripper ============")
+        raw_input()
+
+        try:
+            # execute path
+            self.right_group.execute(plan, wait=True)
+            self.right_group.stop()
+            self.right_group.clear_pose_targets()
+
+            # wait for baxter to get to goal
+            rospy.sleep(4)
+
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.loginfo("Service call failed: %s" % (e,))
+
+
+
+        # stage 2
+        print("============ Move to trigger ============")
+
+        right_EE_pose = self.right_group.get_current_pose().pose
+
+        pose_goal.position.x = right_EE_pose.position.x
+        pose_goal.position.y = right_EE_pose.position.y + self.d
+        pose_goal.position.z = right_EE_pose.position.z
+
+        pose_goal.orientation.x = right_EE_pose.orientation.x
+        pose_goal.orientation.y = right_EE_pose.orientation.y
+        pose_goal.orientation.z = right_EE_pose.orientation.z
+        pose_goal.orientation.w = right_EE_pose.orientation.w
+
+
+        # plan from right EE to goal
+        plan, fraction = self.plan_cartesian_path(right_EE_pose, pose_goal)
+
+        print("The fraction of path covered")
+        print(fraction)
+
+        # display plan in rviz
+        self.display_trajectory(plan)
+
+        rospy.sleep(2)
+
+
+
+        print("============ Press `Enter` to move gripper ============")
+        raw_input()
+
+        try:
+            # execute path
+            self.right_group.execute(plan, wait=True)
+            self.right_group.stop()
+            self.right_group.clear_pose_targets()
+
+            # wait for baxter to get to goal
+            rospy.sleep(4)
+
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.loginfo("Service call failed: %s" % (e,))
+
+
+
+        # stage 3
+        print("============ Press `Enter` to close left gripper ============")
+        raw_input()
+        self.right_gripper.close()
+        rospy.sleep(2)
+
+        self.right_gripper.open()
+
+
+
+
+    def plan_cartesian_path(self, right_EE_pose, goal):
         """ plans a cartesian path using waypoints
 
         Args:
@@ -152,12 +303,12 @@ class RightArm(object):
         iter = 20
         waypoints = []
 
-        xiter = np.linspace(left_EE_pose.position.x, goal.position.x, iter)
-        yiter = np.linspace(left_EE_pose.position.y, goal.position.y, iter)
-        ziter = np.linspace(left_EE_pose.position.z, goal.position.z, iter)
+        xiter = np.linspace(right_EE_pose.position.x, goal.position.x, iter)
+        yiter = np.linspace(right_EE_pose.position.y, goal.position.y, iter)
+        ziter = np.linspace(right_EE_pose.position.z, goal.position.z, iter)
 
         for i in range(iter):
-            p = copy.deepcopy(left_EE_pose)
+            p = copy.deepcopy(right_EE_pose)
             p.position.x = xiter[i]
             p.position.y = yiter[i]
             p.position.z = ziter[i]
@@ -181,14 +332,6 @@ class RightArm(object):
         #self.left_group.set_max_acceleration_scaling_factor(0.6)
 
         return plan, fraction
-
-
-
-
-
-
-
-
 
 
 
@@ -239,10 +382,61 @@ class RightArm(object):
 
 
 
+    def get_transform(self, pose):
+        """ computes the transformation matrix given a pose msg
+
+        Args:
+            pose (Pose): pose of a rigid body
+
+        Returns:
+            T (np.array): homogenous transformation matrix
+        """
+
+        quat_list = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
+
+        homo_rot = quaternion_matrix(quat_list)
+
+        T = np.array([[homo_rot[0][0], homo_rot[0][1], homo_rot[0][2], pose.position.x],
+                      [homo_rot[1][0], homo_rot[1][1], homo_rot[1][2], pose.position.y],
+                      [homo_rot[2][0], homo_rot[2][1], homo_rot[2][2], pose.position.z],
+                      [0,              0,              0,              1]])
+
+        return T
+
+
+    def extract_pose(self, T):
+        """ extracts the quaternion and translation vector from a homogenous
+        tranformation matrix
+
+        Args:
+            T (np.array): homogenous transformation matrix
+
+        Returns:
+            quat (np.array): quaternion represting orientation of rigid body
+            trans (np.array): translation vector represting position of rigid body
+        """
+
+        # extract euler angles
+        rot = np.array([[T[0][0], T[0][1], T[0][2]],
+                        [T[1][0], T[1][1], T[1][2]],
+                        [T[2][0], T[2][1], T[2][2]]])
+
+
+        ax, ay, az = euler_from_matrix(rot)
+        quat = quaternion_from_euler(ax, ay, az)
+
+        trans = np.array([T[0][3], T[1][3], T[2][3]])
+
+        return quat, trans
+
+
+
 def main():
 
     try:
         right_arm = RightArm()
+
+        right_arm.position_trigger()
 
     except rospy.ROSInterruptException:
         return
