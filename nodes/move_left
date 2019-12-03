@@ -135,7 +135,8 @@ class LeftArm(object):
 
 
     def pick_up_gun(self, msg):
-        """
+        """ callback function for Subscriber to /gun_pose
+
         The trajectory is divided into three stages
 
         1) move gripper to standoff location
@@ -274,6 +275,52 @@ class LeftArm(object):
                 print(pose_goal)
 
         return success
+
+
+
+    def aim(self):
+        """ callback for subscriber to /targetBox
+
+        Positions the y and z coordinates of the left EE to align with the target
+
+        Args:
+            msg
+        """
+
+
+        # move to initial shooting position
+        # restrict z motion is x-axis
+        # get pose of EE
+        left_EE_pose = self.left_group.get_current_pose().pose
+
+
+        pose_goal = geometry_msgs.msg.Pose()
+        pose_goal.orientation.x = 0.065
+        pose_goal.orientation.y = 0.766
+        pose_goal.orientation.z = -0.022
+        pose_goal.orientation.w = 0.639
+
+        pose_goal.position.x = 0.415
+        pose_goal.position.y = 0.531
+        pose_goal.position.z = -0.15
+
+
+        plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
+        print("The fraction of path covered")
+        print(fraction)
+
+        display_trajectory(plan, self.robot, self.display_trajectory_publisher)
+
+        rospy.sleep(2)
+
+
+
+
+
+
+
+
+
 
 
 
