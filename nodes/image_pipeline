@@ -151,7 +151,7 @@ class imageProcessor:
         self.pub2 = rospy.Publisher("/image_color", Image, queue_size = 1)
 
         # Redistributes the rectified image to the april tags detector
-        self.rectifiedDistributor = rospy.Subscriber( "/image_rect", Image, self.distributeRectified )
+        self.rectifiedDistributor = rospy.Subscriber( "/image_rect_color", Image, self.distributeRectified )
         self.publishRectified = rospy.Publisher( "/camera_rect/image_rect", Image, queue_size = 1   )
 
         # /camera_rect/image_rect 

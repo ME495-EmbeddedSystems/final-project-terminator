@@ -32,3 +32,4 @@ to make sure environment variables have been set, run`echo $ROS_MASTER_URI`
 and `echo $ROS_IP` or run `ping 10.42.0.2` make sure is getting data
 
 run `roslaunch terminator move.launch` to bring up the moveit & start joint trajectory controller.
+
