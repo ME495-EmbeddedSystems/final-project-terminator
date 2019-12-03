@@ -104,7 +104,7 @@ class AimTarget(object):
 		# aim_goal.position.z = -0.389637
 
 
-		# #initial configuration(Boston)
+		# #initial configuration
 
 		# aim_goal.orientation.x = 0.065
 		# aim_goal.orientation.y = 0.766
