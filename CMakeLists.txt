@@ -3,7 +3,11 @@ project(terminator)
 
 
 find_package(catkin REQUIRED COMPONENTS
+  actionlib_msgs
+  message_generation
+  message_runtime
   rospy
+  std_msgs
 )
 
 catkin_python_setup()
@@ -24,23 +28,28 @@ catkin_python_setup()
 # )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+   DIRECTORY action
+   FILES
+   AimGun.action
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   actionlib_msgs
+)
 
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES terminator
-   CATKIN_DEPENDS rospy
+   CATKIN_DEPENDS
+     actionlib_msgs
+     message_generation
+     message_runtime
+     rospy
+     std_msgs
 #  DEPENDS system_lib
 )
 

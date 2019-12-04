@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+
+
+"""
+
+PUBLSIHERS:
+    +
+
+SUBSCRIBERS:
+    +
+"""
+
+import roslib
+roslib.load_manifest('terminator')
+import rospy
+import actionlib
+
+from terminator.msg import AimGunAction, AimGunGoal
+
+
+def main():
+
+    rospy.init_node("aim_robot_client", anonymous=True)
+
+    client = actionlib.SimpleActionClient('aim_gun', AimGunAction)
+    client.wait_for_server()
+
+    goal = AimGunGoal()
+    goal.aim = "Aim gun"
+    client.send_goal(goal)
+    client.wait_for_result(rospy.Duration.from_sec(5.0))
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#

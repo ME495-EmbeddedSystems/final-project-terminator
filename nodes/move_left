@@ -30,6 +30,7 @@ import tf.transformations as tr
 from tf.transformations import quaternion_matrix
 from tf.transformations import quaternion_from_euler
 from tf.transformations import euler_from_matrix
+from std_msgs.msg import Bool
 
 from terminator import*
 
@@ -123,7 +124,15 @@ class LeftArm(object):
 
 
         # place arm in init position
-        arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
+        #arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
+        self.shoot_pose()
+
+
+        # status of baxter
+        # is armed and is aiming
+        self.armed = False
+        self.is_aiming = False
+
 
         print("Done Initializing Baxter")
 
@@ -131,7 +140,24 @@ class LeftArm(object):
         # subscribe to gun pose
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal_waypoints)
-        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.pick_up_gun)
+        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.pick_up_gun)
+        self.gun_pose_sub = rospy.Subscriber('/targetBox', Point, self.aim)
+
+        self.gun_pose_sub = rospy.Subscriber('/start_aiming', Bool, self.iniate_aiming)
+
+
+        self.aim_pub = rospy.Publisher('/baxter_aiming', Bool, queue_size=10)
+
+
+
+
+
+    def iniate_aiming(self, data):
+        self.is_aiming = data.data
+
+
+
+
 
 
     def pick_up_gun(self, msg):
@@ -278,16 +304,9 @@ class LeftArm(object):
 
 
 
-    def aim(self):
-        """ callback for subscriber to /targetBox
-
-        Positions the y and z coordinates of the left EE to align with the target
-
-        Args:
-            msg
-        """
-
-
+    def shoot_pose(self):
+        # TODO: move to end of pick up gun
+        ##########################################
         # move to initial shooting position
         # restrict z motion is x-axis
         # get pose of EE
@@ -295,14 +314,14 @@ class LeftArm(object):
 
 
         pose_goal = geometry_msgs.msg.Pose()
-        pose_goal.orientation.x = 0.065
-        pose_goal.orientation.y = 0.766
-        pose_goal.orientation.z = -0.022
-        pose_goal.orientation.w = 0.639
+        pose_goal.orientation.x = self.orientation_x
+        pose_goal.orientation.y = self.orientation_y
+        pose_goal.orientation.z = self.orientation_z
+        pose_goal.orientation.w = self.orientation_w
 
-        pose_goal.position.x = 0.415
-        pose_goal.position.y = 0.531
-        pose_goal.position.z = -0.15
+        pose_goal.position.x = 0.87
+        pose_goal.position.y = 0.30
+        pose_goal.position.z = 0.20
 
 
         plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
@@ -315,11 +334,124 @@ class LeftArm(object):
 
 
 
+        print("============ Press `Enter` to move to shooting pose ============")
+        raw_input()
+
+        try:
+            # execute path
+            self.left_group.execute(plan, wait=True)
+            self.left_group.stop()
+            self.left_group.clear_pose_targets()
+
+            # wait for baxter to get to goal
+            rospy.sleep(2)
+
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.loginfo("Service call failed: %s" % (e,))
+
+
+        # test if made it to pre-pick up position
+        left_EE_pose = self.left_group.get_current_pose().pose
+
+        if made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol):
+            print("Goal Reached")
+        else:
+            print("Goal Not Reached!")
+
+        ##########################################
 
 
 
 
 
+    def aim(self, msg):
+        """ callback for subscriber to /targetBox
+
+        Positions the y and z coordinates of the left EE to align with the target
+
+        Args:
+            msg (Point): x, y, and z location in pixels of target
+        """
+
+        # if requested to start aiming
+        if self.is_aiming:
+
+            print("==== AIMING ====")
+
+            # goal tolerance in pixels
+            tol = 20
+            y_goal = 320
+            z_goal = 320
+
+            # in pixel coordinates, center of bounding box
+            # coordinate axis is in baxters frame
+            y_target = msg.x
+            z_target = msg.y
+
+            # amount to move EE
+            dy = 0.0254
+            dz = 0.0254
+
+
+            # move in y direction until goal is met
+            y_error = y_goal - y_target
+            z_error = z_goal - z_target
+
+            print("Y ERROR: ", y_error)
+            print("Z ERROR: ", z_error)
+
+
+            if abs(y_error) > tol or abs(z_error) > tol:
+
+                # get state feedback
+                left_EE_pose = self.left_group.get_current_pose().pose
+
+                pose_goal = geometry_msgs.msg.Pose()
+                pose_goal = left_EE_pose
+
+
+                if abs(y_error) > tol:
+
+                    # move arm to left
+                    if y_error > 0:
+                        print("Moving to the left")
+                        pose_goal.position.y = left_EE_pose.position.y + dy
+
+                    # move right:
+                    else:
+                        print("Moving to the right")
+                        pose_goal.position.y = left_EE_pose.position.y - dy
+
+
+                if abs(z_error) > tol:
+
+                    # move arm to left
+                    if z_error > 0:
+                        print("Moving to the up")
+                        pose_goal.position.z = left_EE_pose.position.z + dz
+
+                    # move right:
+                    else:
+                        print("Moving to the down")
+                        pose_goal.position.z = left_EE_pose.position.z - dz
+
+
+
+                # plan and move
+                plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
+                # execute path
+                self.left_group.execute(plan, wait=True)
+                self.left_group.stop()
+                self.left_group.clear_pose_targets()
+
+                rospy.sleep(0.5)
+
+
+            # target is withing sight
+            else:
+                aim = Bool()
+                aim.data = False
+                self.aim_pub.Publish(aim)
 
 
 
@@ -332,6 +464,7 @@ def main():
     try:
         left_arm = LeftArm()
 
+        #left_arm.aim()
         #print("============ Press `Enter` to execute a movement using a pose goal")
         # raw_input()
         # #left_arm.go_to_goal()
