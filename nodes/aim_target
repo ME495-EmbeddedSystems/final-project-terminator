@@ -12,7 +12,7 @@ from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 from std_msgs.msg import String, Bool
 from moveit_commander.conversions import pose_to_list
 from baxter_interface import Gripper, CHECK_VERSION
-
+from tf.transformations import quaternion_from_euler
 
 
 class AimTarget(object):
@@ -40,7 +40,7 @@ class AimTarget(object):
 		self.aim_the_target = moveit_commander.MoveGroupCommander('left_arm')
 		self.aim_the_target.set_goal_position_tolerance(0.01)
 		self.aim_the_target.set_goal_orientation_tolerance(0.01)
-		self.aim_the_target.set_planner_id('RRTConnectkConfigDefault')
+		# self.aim_the_target.set_planner_id('RRTConnectkConfigDefault')
 		# self.aim_the_target.set_planning_time(30)
 		# self.aim_the_target.allow_replanning(True)
 		# self.aim_the_target.set_max_velocity_scaling_factor(0.6)
@@ -73,20 +73,48 @@ class AimTarget(object):
 
 
 	def aim_goal(self):
-		""" moves baxters left end effector to a pose goal """
+		""" moves baxter's left hand to a pose goal """
 
 
 	
 		aim_goal = geometry_msgs.msg.Pose()
 
-		aim_goal.orientation.x = -0.618235
-		aim_goal.orientation.y = 0.784464
-		aim_goal.orientation.z = 0.016503
-		aim_goal.orientation.w = 0.0461452
+		# try to set the orientation constant:
 
-		aim_goal.position.x = -0.205829
-		aim_goal.position.y = 0.654037
-		aim_goal.position.z = -0.389637
+		q = quaternion_from_euler(3.14, 1.5707, 3.14)
+		aim_goal.orientation.x = q[0]
+		aim_goal.orientation.y = q[1]
+		aim_goal.orientation.z = q[2]
+		aim_goal.orientation.w = q[3]	
+	
+		aim_goal.position.x = 0.832159
+		aim_goal.position.y = 0.531532
+		aim_goal.position.z = -0.10953
+	
+        ###########
+        
+		# possible position:
+
+		# aim_goal.orientation.x = -0.618235
+		# aim_goal.orientation.y = 0.784464
+		# aim_goal.orientation.z = 0.016503
+		# aim_goal.orientation.w = 0.0461452	
+
+		# aim_goal.position.x = -0.205829
+		# aim_goal.position.y = 0.654037
+		# aim_goal.position.z = -0.389637
+
+
+		# #initial configuration
+
+		# aim_goal.orientation.x = 0.065
+		# aim_goal.orientation.y = 0.766
+		# aim_goal.orientation.z = -0.022
+		# aim_goal.orientation.w = 0.639
+
+		# aim_goal.position.x = 0.415
+		# aim_goal.position.y = 0.531
+		# aim_goal.position.z = -0.15
 
 		self.aim_the_target.set_pose_target(aim_goal)
 		# self.aim_the_target.set_start_state_to_current_state()        
@@ -141,7 +169,7 @@ class AimTarget(object):
 		actual = pose_to_list(actual)
 
 		for index in range(len(goal)):
-			if abs(actual[index] - goal[index]) > 0.01:
+			if abs(actual[index] - goal[index]) > 1:
 				return False
 
 		return True
