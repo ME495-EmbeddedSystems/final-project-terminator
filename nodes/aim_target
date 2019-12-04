@@ -14,7 +14,9 @@ from moveit_commander.conversions import pose_to_list
 from baxter_interface import Gripper, CHECK_VERSION
 from tf.transformations import quaternion_from_euler
 
-
+x_medium = 320
+y_medium = 320
+acc = 0
 class AimTarget(object):
 	""" manipulates baxters left arm """
 
