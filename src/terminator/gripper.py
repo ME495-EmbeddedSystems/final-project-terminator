@@ -5,6 +5,8 @@ This file contains methods for getting the end effectors to the desired pose
 
 """
 
+from __future__ import division
+
 
 import copy
 import rospy
