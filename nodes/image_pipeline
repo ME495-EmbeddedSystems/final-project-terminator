@@ -5,26 +5,26 @@
     It takes in data from cameras and distributes it to the external package
     nodes that process it. It also recieves the processed data from the external
     nodes and publishes it to the nodes implementing the moving of Baxter
-        
-    Subscribers: We subscribe to 
-    /cameras/left_hand_camera/image - type = sensor_msgs/Image. This is the wrist 
+
+    Subscribers: We subscribe to
+    /cameras/left_hand_camera/image - type = sensor_msgs/Image. This is the wrist
     camera's image
-    /cameras/eft_hand_camera/camera_info = type = sensor_msg/CameraInfo. This 
+    /cameras/eft_hand_camera/camera_info = type = sensor_msg/CameraInfo. This
     is the Camera's calibration matrix
-    /darknet_ros/bounding_boxes = type BoundingBox - which is an 
+    /darknet_ros/bounding_boxes = type BoundingBox - which is an
     array of classification types and (x,y) pairs associated with it
 
 
-    Publishers: This node publishes on the topics that YOLO ROS requires 
+    Publishers: This node publishes on the topics that YOLO ROS requires
     in order to process images. camerInfo is the camera's calibration matrix.
     image_rect is the actual image from Baxter's right wrist camera
-    Topics:  
-    /camera_rect/camera_info type = sensor_msgs/CameraInfo 
+    Topics:
+    /camera_rect/camera_info type = sensor_msgs/CameraInfo
     /camera_rect/image_rect = sensor_msgs/Image
-    /targetBox = type = darkntros_msgs/BoundingBox which is the 
+    /targetBox = type = darkntros_msgs/BoundingBox which is the
     target's bounding box in the image
-    
- 
+
+
 
 """
 
@@ -37,25 +37,25 @@ import actionlib
 import tf
 import numpy as np
 from random import uniform
-from darknet_ros_msgs.msg import BoundingBoxes 
+from darknet_ros_msgs.msg import BoundingBoxes
 from apriltag_ros.msg import AprilTagDetectionArray
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Point
 
 
 # This class implements the image processing pipeline
 # for our given task
 class imageProcessor:
 
-    
+
     # This node recieves from Baxter's camera
     # and publishes it in a format that YOLO ROS can use
     def process_initial_image(self, data):
         # pass
-        # Publish the image we recieved so YOLO ROS can process it 
+        # Publish the image we recieved so YOLO ROS can process it
         self.pub.publish(data)
         self.pub2.publish(data)
 
-    # This function takes the classification data from YOLO ROS 
+    # This function takes the classification data from YOLO ROS
     # and finds the (x,y) pair of the most probable desired object
     def process_final_image(self, data):
 
@@ -63,40 +63,51 @@ class imageProcessor:
         mostProbableIndex = 0
 
         myList = data.bounding_boxes
-        
+
         # Edge case: when there's not anythign in the image
         if ( myList is None):
-            return 
+            return
 
         if ( len(myList) <= 0):
             return
-        
+
         # Used to record if the data stream really has a cup
         isThereCup = False
 
         # Search for the most probable human in the image
-        # As of now, we will be shooting cups 
+        # As of now, we will be shooting cups
         for i in range(len(myList) ):
-            
-            if (myList[i].Class == "Cup" ):
-                    
-                isThereCup = True 
+
+            if (myList[i].Class == "cup" ):
+
+                isThereCup = True
 
                 if ( myList[i].probability  > maxProbability  ):
-                    maxProbability = myList[i].maxProbability
-                    mostProbableIndex = i 
-        
+                    maxProbability = myList[i].probability
+                    mostProbableIndex = i
+
         # If we have actually seen a cup, then print/publish the information
         if ( isThereCup == True ):
             # Average the bounds of the box
             x = (float(myList[mostProbableIndex].xmin + myList[mostProbableIndex].xmax) ) / 2.0
             y = (float(myList[mostProbableIndex].ymin + myList[mostProbableIndex].ymax) ) / 2.0
-            
+
             # Republish the bounding box message
-            self.targetInfo.publish( data.bounding_boxes[mostProbableIndex]  )
-            
+            x_average = float( (myList[mostProbableIndex].xmin + myList[mostProbableIndex].xmax ) ) / 2.0
+            y_average = float( (myList[mostProbableIndex].ymin + myList[mostProbableIndex].ymax ) ) / 2.0
+
+            print(x_average)
+
+
+            p = Point()
+            p.x = x_average
+            p.y = y_average
+            p.z = 0.0
+
+            self.targetInfo.publish(p)
+
             # Print to the screen for testing
-            rospy.loginfo("The deep net is most confident that a cup is at (" + 
+            rospy.loginfo("The deep net is most confident that a cup is at (" +
                 str(x) + str(", ") + str(y) + str(")")  )
 
 
@@ -104,29 +115,29 @@ class imageProcessor:
     # strip off the data we don't need and publish just the pose
     # to the nodes which move the robot
     def apriltag_callback(self, data):
-       
-        
+
+
         myPose = Pose()
-        
+
         # print( data.detections[2].pose.pose.pose )
-        
+
         # if ( len(data.detections) > 1 ):
-        # self.desiredGunPose.publish( data.detections[2].pose.pose.pose )            
-         
+        # self.desiredGunPose.publish( data.detections[2].pose.pose.pose )
+
         # myPose.orientation = data.detections.pose
-        # myPose.position = 
-        
+        # myPose.position =
+
         if ( len(data.detections) > 0):
             self.desiredGunPose.publish( data.detections[0].pose.pose.pose )
         else:
             pass
 
     # This method recieves the calibration matrix from Baxter's right arm
-    # and publishes it to the correct topic so that apriltags can use it 
+    # and publishes it to the correct topic so that apriltags can use it
     def publish_left_calibration(self, data):
         # Publish the info on the correct topic so apriltag_ros can use it
-        self.calibrationMatrixLeftPub.publish(data) 
-        self.redistributeCameraInfo.publish(data) 
+        self.calibrationMatrixLeftPub.publish(data)
+        self.redistributeCameraInfo.publish(data)
         self.redistributeCameraInfo2.publish(data)
 
 
@@ -136,47 +147,45 @@ class imageProcessor:
     # Constructor method
     def __init__(self):
         self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_initial_image)
-    
+
         # self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_image)
-        # self.headCamera = rospy.Subscriber("/cameras/head_camera/image", Image, self.process_image) 
-        
+        # self.headCamera = rospy.Subscriber("/cameras/head_camera/image", Image, self.process_image)
+
         self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info_std", CameraInfo, self.publish_left_calibration)
         self.calibrationMatrixLeftPub =  rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
-        
+
         self.redistributeCameraInfo = rospy.Publisher("/camera_info", CameraInfo, queue_size = 1)
         self.redistributeCameraInfo2 = rospy.Publisher("/camera_rect/camera_info", CameraInfo, queue_size = 1)
-        
+
 
         self.pub = rospy.Publisher("/image_raw", Image, queue_size = 1)
         self.pub2 = rospy.Publisher("/image_color", Image, queue_size = 1)
 
         # Redistributes the rectified image to the april tags detector
-        self.rectifiedDistributor = rospy.Subscriber( "/image_rect_color", Image, self.distributeRectified )
+        self.rectifiedDistributor = rospy.Subscriber( "/image_rect", Image, self.distributeRectified )
         self.publishRectified = rospy.Publisher( "/camera_rect/image_rect", Image, queue_size = 1   )
 
-        # /camera_rect/image_rect 
-        
-        
+        # /camera_rect/image_rect
 
-        # Subscribe to YOLO ROS's description of where the objects are 
+
+
+        # Subscribe to YOLO ROS's description of where the objects are
         self.result_image = rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.process_final_image)
-        
+
         # Create publisher to publish the target's location
-        self.targetInfo =  rospy.Publisher("/targetBox", BoundingBoxes, queue_size = 1)
-       
+        self.targetInfo =  rospy.Publisher("/targetBox", Point, queue_size = 1)
+
         # Subscribe to the april tag classification data stream
         self.apriltags = rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.apriltag_callback)
         self.desiredGunPose = rospy.Publisher("/gun_pose", Pose, queue_size = 1 )
 
 # Main Function
-# This is where the main function begins
 if __name__ == "__main__":
-    
+
     rospy.init_node("getCameraNode")
-     
+
     # create object
     my_imageProcessor = imageProcessor()
 
     # Keep the thread alive by spinning
     rospy.spin()
-
