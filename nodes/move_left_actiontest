@@ -30,7 +30,7 @@ class LeftArm(object):
 
     def __init__(self):
         print("init")
-        self._as = actionlib.SimpleActionServer("commander", terminator.msg.CommandsAction, self.execute_cb, auto_start = False)
+        self._as = actionlib.SimpleActionServer("guncommander", terminator.msg.CommandsAction, execute_cb=self.execute_cb, auto_start = False)
         self._as.start()
         print("made it")
 
@@ -54,13 +54,17 @@ class LeftArm(object):
             rospy.loginfo('%s: Succeeded' % 'left_arm')
             print(self._result.completion)
             self._as.set_succeeded(self._result)
+        else:
+            self._result.completion = False
 
-        rospy.spin()
+
+
 
 
 if __name__ == '__main__':
     rospy.init_node('left_arm')
     server = LeftArm()
+    rospy.spin()
 
 
 

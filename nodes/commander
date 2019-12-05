@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import rospy
-import executionCmd.msg # add this to the CMakeList
 
 import roslib
-from __future__ import print_function
+import sys
+import time
+
 import actionlib
 
 roslib.load_manifest('terminator')
@@ -22,62 +23,79 @@ use action server
 """
 
 def enableBaxter():
-    baxter_interface.RobotEnable().enable()
-    rospy.sleep(0.25)
+#    baxter_interface.RobotEnable().enable()
+#    rospy.sleep(0.25)
     print("Baxter is enabled")
 
 
 def main():
 
-    client = actionlib.SimpleActionClient('commander', CommandsAction)
-    client.wait_for_server()
+    pickgunclient = actionlib.SimpleActionClient('guncommander', terminator.msg.CommandsAction)
+    aimclient = actionlib.SimpleActionClient('aimcommander', terminator.msg.CommandsAction)
+
+
+    print("next")
+    pickgunclient.wait_for_server()
+    print("received")
 
     # Pick up the gun using the left hand
-    goal = CommandsGoal(action='get_gun')
-    client.send_goal(goal)
-    client.wait_for_result()
-    gotgun = client.get_result() #bool if baxter retrieved gun or not
+    goal = terminator.msg.CommandsGoal(actionname="get_gun")
+    pickgunclient.send_goal(goal)
+    pickgunclient.wait_for_result()
+    gotgun = pickgunclient.get_result() #bool if baxter retrieved gun or not
 
+    print(pickgunclient.get_result())
     # Move left hand to be in line with the target
-    if gotgun == True:
+    if gotgun.completion == True:
         print("Baxter is armed")
+        time.sleep(5)
 
-        aimgoal = CommandsGoal(action='aim_gun')
-        client.send_goal(aimgoal)
-        client.wait_for_result()
-        aimed = client.get_result()
+        pickgunclient.stop_tracking_goal()
+        pickgunclient.cancel_all_goals()
 
-    # Right hand moves to the trigger
-    if aimed == True:
-        print("Baxter has acquired target and is aiming")
+        print("canceled")
 
-        triggergoal = CommandsGoal(action='moveto_trigger')
-        client.send_goal(triggergoal)
-        client.wait_for_result()
-        ontrigger = client.get_result()
+        aimgoal = terminator.msg.CommandsGoal(actionname='aim_gun')
 
-    # User confirmation to fire
-    if ontrigger == True:
-        print("Baxter awaiting command to fire")
-        user_input = raw_input("Permission to fire? Yes or No")
+        #client.accept_new_goal()
 
-        # Pull the trigger
-        if (user_input.lower() == "yes" or user_input.lower() == "y")
-            firegoal = CommandsGoal(action='fire')
-            client.send_goal(firegoal)
+        aimclient.send_goal(aimgoal)
+        aimclient.wait_for_result()
+        aimed = aimclient.get_result()
+
+        print(aimed.completion)
+
+        # Right hand moves to the trigger
+        if aimed.completion == True:
+            print("Baxter has acquired target and is aiming")
+
+            triggergoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
+            client.send_goal(triggergoal)
             client.wait_for_result()
-            fired = client.get_result()
+            ontrigger = client.get_result()
 
-            if fired == True:
-                print("Baxter has successfully shot (or attempted to)")
-        else
-            print("Please select another option")
+            # User confirmation to fire
+            if ontrigger == True:
+                print("Baxter awaiting command to fire")
+                user_input = raw_input("Permission to fire? Yes or No")
+
+                # Pull the trigger
+                if (user_input.lower() == "yes" or user_input.lower() == "y"):
+                    firegoal = terminator.msg.CommandsGoal(actionname='fire')
+                    client.send_goal(firegoal)
+                    client.wait_for_result()
+                    fired = client.get_result()
+
+                    if fired == True:
+                        print("Baxter has successfully shot (or attempted to)")
+                else:
+                    print("Please select another option")
 
 
 if __name__ == '__main__':
     try:
-        rospy.init_node("commander_client")
+        rospy.init_node("commander_client_py")
         enableBaxter()
         main()
     except rospy.ROSInterruptException:
-        print("program interrupted before baxter could shoot", file=sys.stderr)
+        print("program interrupted before baxter could shoot")

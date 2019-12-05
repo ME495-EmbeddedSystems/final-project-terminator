@@ -24,12 +24,14 @@ import terminator.msg
 
 class RightArm(object):
     # create messages that are used to publish feedback/result
-    _feedback = terminator.msg.CommandsFeedback()
-    _result = terminator.msg.CommandsResult()
+    _aimfeedback = terminator.msg.CommandsFeedback()
+    _aimresult = terminator.msg.CommandsResult()
+
+
 
     def __init__(self):
         print("init")
-        self._as = actionlib.SimpleActionServer("commander", terminator.msg.CommandsAction, self.execute_cb, auto_start = False)
+        self._as = actionlib.SimpleActionServer("aimcommander", terminator.msg.CommandsAction, self.execute_cb, auto_start = False)
         self._as.start()
         print("made it")
 
@@ -50,17 +52,18 @@ class RightArm(object):
             success = False
 
         if success:
-            self._result.completion = True
+            self._aimresult.completion = True
             rospy.loginfo('%s: Succeeded' % 'right_arm')
-            self._as.set_succeeded(self._result)
+            self._as.set_succeeded(self._aimresult)
+        else:
+            self._aimresult.completion = False
 
-        rospy.spin()
 
 
 if __name__ == '__main__':
     rospy.init_node('right_arm')
     server = RightArm()
-
+    rospy.spin()
 
 
 
