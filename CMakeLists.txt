@@ -32,6 +32,7 @@ add_action_files(
    DIRECTORY action
    FILES
    AimGun.action
+   Commands.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -65,6 +66,10 @@ install(PROGRAMS
    nodes/move_left
    nodes/move_right
 
+   nodes/commander
+   nodes/move_left_actiontest
+   nodes/move_right_actiontest
+   
    #src/terminator/gripper.py
 
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
