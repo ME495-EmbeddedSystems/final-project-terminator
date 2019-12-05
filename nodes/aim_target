@@ -116,10 +116,10 @@ class AimTarget(object):
 			
 
 			aim_goal.position.y = current_pose.position.y + KP_y*y_err + KI_y * (self.y_err_i + y_err * 0.005 )
-			self.y_err_i += y_err*1
+			self.y_err_i += y_err*0.005
 
 			aim_goal.position.z = current_pose.position.z + KP_z*z_err + KI_z * (self.z_err_i + z_err * 0.005 )
-			self.z_err_i += z_err*1
+			self.z_err_i += z_err*0.005
 
 			aim_goal.orientation.x = -0.003
 			aim_goal.orientation.y = 0.696
