@@ -11,9 +11,8 @@ import geometry_msgs.msg
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseStamped
 from std_msgs.msg import String, Bool
 from moveit_commander.conversions import pose_to_list
-from baxter_interface import Gripper, CHECK_VERSION
 from tf.transformations import quaternion_from_euler
-
+from terminator import*
 
 class AimTarget(object):
 	""" manipulates baxters left arm """
@@ -33,29 +32,32 @@ class AimTarget(object):
 		# Instantiate a PlanningSceneInterface object. 
 		self.scene = moveit_commander.PlanningSceneInterface()
 		# Instantiate a MoveGroupCommander object. This object is an interface to a planning group
-		# baxter_interface.RobotEnable().enable()
+		baxter_interface.RobotEnable().enable()
 		rospy.sleep(0.25)
 		rospy.loginfo("Ready for aim_target")
 
-		self.aim_the_target = moveit_commander.MoveGroupCommander('left_arm')
-		self.aim_the_target.set_goal_position_tolerance(0.01)
-		self.aim_the_target.set_goal_orientation_tolerance(0.01)
-		# self.aim_the_target.set_planner_id('RRTConnectkConfigDefault')
-		# self.aim_the_target.set_planning_time(30)
-		# self.aim_the_target.allow_replanning(True)
-		# self.aim_the_target.set_max_velocity_scaling_factor(0.6)
-		# self.aim_the_target.set_max_acceleration_scaling_factor(0.6)
+		self.aim_group = moveit_commander.MoveGroupCommander('left_arm')
+		self.position_tolerance = 0.05
+		self.orientation_tolerance = 0.3
+		self.aim_group.set_goal_position_tolerance(self.position_tolerance)
+		self.aim_group.set_goal_orientation_tolerance(self.orientation_tolerance)
+		# self.aim_group.set_planner_id('RRTConnectkConfigDefault')
+		# self.aim_group.set_planning_time(30)
+		# self.aim_group.allow_replanning(True)
+		# self.aim_group.set_max_velocity_scaling_factor(0.6)
+		# self.aim_group.set_max_acceleration_scaling_factor(0.6)
 
-		# trajectory in RVIZ
+		# initialize error
 		self.y_err_i = 0
 		self.z_err_i = 0
-		self.sub_gunpose = rospy.Subscriber('/targetBox', Point, self.aim_goal)
+		# subscribe to /TargetBox
+		self.target_pose = rospy.Subscriber('/targetBox', Point, self.aim_goal)
 		self.display_trajectory_publisher = rospy.Publisher(
 			'/move_group/display_planned_path',
 			moveit_msgs.msg.DisplayTrajectory,
 			queue_size=20)
 		# get the name of the reference frame for this robot:
-		planning_frame = self.aim_the_target.get_planning_frame()
+		planning_frame = self.aim_group.get_planning_frame()
 		print "============ Planning frame: %s" % planning_frame     
 
 	
@@ -84,27 +86,53 @@ class AimTarget(object):
 		# center of the cup in pixel coordinates
 		y_target = msg.x
 		z_target = msg.y
-		# feedback control gains
-		KP = 0.2
-		KI = 0.2
 		# distance to move
-		y_err = y_ref -  y_target
-		z_err = z_ref -  z_target
+		# y_err = y_ref -  y_target
+		# z_err = z_ref -  z_target
+		y_err = y_target - y_ref 
+		z_err = z_target - z_ref
+		print("Y error is : ", y_err)
+		print("Z error is : ", z_err)
 
-
-
+		# dy = 0.0254
+		# dz = 0.0254
+		
+		# feedback control gains
+		KP_y = 0.05
+		KP_z = 0.5
+		KI_y = 0.01
+		KI_z = 0.01
+		
 		if abs(y_err) > diff or abs(z_err) > diff:
+			current_pose = self.aim_group.get_current_pose().pose
+			aim_goal = geometry_msgs.msg.Pose()
+			aim_goal = current_pose
 
 			# get state feedback
-			current_pose = self.aim_the_target.get_current_pose().pose
-			aim_goal = geometry_msgs.msg.Pose()
+
+			print("current_pose_y is :",current_pose.position.y)
+			print("current_pose_z is :",current_pose.position.z)
+		
 			
 
-			aim_goal.position.y = current_pose.position.y + KP*y_err + KI * (self.y_err_i + y_err * 1 )
+			aim_goal.position.y = current_pose.position.y + KP_y*y_err + KI_y * (self.y_err_i + y_err * 0.005 )
 			self.y_err_i += y_err*1
 
-			aim_goal.position.z = current_pose.position.z + KP*z_err + KI * (self.z_err_i + z_err * 1 )
+			aim_goal.position.z = current_pose.position.z + KP_z*z_err + KI_z * (self.z_err_i + z_err * 0.005 )
 			self.z_err_i += z_err*1
+
+			aim_goal.orientation.x = -0.003
+			aim_goal.orientation.y = 0.696
+			aim_goal.orientation.z = -0.0048
+			aim_goal.orientation.w = 0.717
+			
+
+			# q = quaternion_from_euler(3.14, 1.5707, 3.14)
+			# aim_goal.orientation.x = q[0]
+			# aim_goal.orientation.y = q[1]
+			# aim_goal.orientation.z = q[2]
+			# aim_goal.orientation.w = q[3]	
+
 
 
 			# if abs(y_err) > diff:
@@ -132,18 +160,18 @@ class AimTarget(object):
 
 
 
+
 			# plan to move
-			self.aim_the_target.set_pose_target(aim_goal)
-			plan = self.aim_the_target.plan()
-			self.display_trajectory(plan)
+			plan, fraction = plan_cartesian_path(current_pose, aim_goal, self.aim_group)
+			self.display_trajectory(plan, self.robot, self.display_trajectory_publisher)
 			# excute
 			confirmed = raw_input('Execute aim_target? y/n')
 			if confirmed == "y":
-				self.aim_the_target.execute(plan, wait=True)        
-				self.aim_the_target.stop()
-				self.aim_the_target.clear_pose_targets()
+				self.aim_group.execute(plan, wait=True)        
+				self.aim_group.stop()
+				self.aim_group.clear_pose_targets()
 
-			current_pose = self.aim_the_target.get_current_pose().pose
+			
 			print("current_pose is:")
 			print(current_pose)
 			print("the goal pose is :")
@@ -207,21 +235,21 @@ class AimTarget(object):
 	# 	# aim_goal.position.y = 0.531
 	# 	# aim_goal.position.z = -0.15
 
-	# 	self.aim_the_target.set_pose_target(aim_goal)
-	# 	# self.aim_the_target.set_start_state_to_current_state()        
+	# 	self.aim_group.set_pose_target(aim_goal)
+	# 	# self.aim_group.set_start_state_to_current_state()        
 		# plan to path goal
 
-		# plan = self.aim_the_target.plan()
+		# plan = self.aim_group.plan()
 		# self.display_trajectory(plan)
 
 	# 	# execute plan
 	# 	confirmed = raw_input('Execute aim_target? y/n')
 	# 	if confirmed == "y":
-	# 		self.aim_the_target.execute(plan, wait=True)        
-	# 		self.aim_the_target.stop()
-	# 		self.aim_the_target.clear_pose_targets()
+	# 		self.aim_group.execute(plan, wait=True)        
+	# 		self.aim_group.stop()
+	# 		self.aim_group.clear_pose_targets()
 
-	# 	current_pose = self.aim_the_target.get_current_pose().pose
+	# 	current_pose = self.aim_group.get_current_pose().pose
 	# 	print("current_pose is:")
 	# 	print(current_pose)
 	# 	print("the goal pose is :")
@@ -236,16 +264,16 @@ class AimTarget(object):
 
 		
 
-	def display_trajectory(self, plan):
-		""" Published planned trajectory in rviz
-		Args:
-			plan (): motion plan to goal
-		"""
+	# def display_trajectory(self, plan):
+	# 	""" Published planned trajectory in rviz
+	# 	Args:
+	# 		plan (): motion plan to goal
+	# 	"""
 
-		display_traj = moveit_msgs.msg.DisplayTrajectory()
-		display_traj.trajectory_start = self.robot.get_current_state()
-		display_traj.trajectory.append(plan)
-		self.display_trajectory_publisher.publish(display_traj);
+	# 	display_traj = moveit_msgs.msg.DisplayTrajectory()
+	# 	display_traj.trajectory_start = self.robot.get_current_state()
+	# 	display_traj.trajectory.append(plan)
+	# 	self.display_trajectory_publisher.publish(display_traj);
 
 	def check_aim(self, goal, actual):
 		""" Test if end effector made it to target
