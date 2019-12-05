@@ -132,47 +132,68 @@ class LeftArm(object):
         init_goal.position.z = -0.15
 
 
+        # pose of the tag
+        self.tag_pose = None
+
 
         # place arm in init position
-        #arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
-        self.shoot_pose()
+        arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
+        #self.shoot_pose()
 
         # subscribe to gun pose
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
-        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal_waypoints)
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.pick_up_gun)
+        self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.tag_position)
         self.gun_pose_sub = rospy.Subscriber('/targetBox', Point, self.target_position)
 
-        # aiming action server
-        self.aim_server = actionlib.SimpleActionServer('aim_gun', AimGunAction, self.execute, False)
-        self.aim_server.start()
+        # # aiming action server
+        # self.aim_server = actionlib.SimpleActionServer('aim_gun', AimGunAction, self.execute, False)
+        # self.aim_server.start()
+        #
+        # self.aiming_feedback = AimGunFeedback()
+        # self.aiming_result = AimGunResult()
 
-        self.aiming_feedback = AimGunFeedback()
-        self.aiming_result = AimGunResult()
+        # action server
+
 
 
         print("Done Initializing Baxter")
 
 
 
-    def execute(self, goal):
+    # def execute(self, goal):
+    #
+    #     target_in_sight = self.aim()
+    #
+    #     self.aiming_feedback.aiming_state = "Baxter is Aiming"
+    #     self.aim_server.publish_feedback(self.aiming_feedback)
+    #
+    #     if not target_in_sight:
+    #         self.aiming_result.found_target = False
+    #         self.aim_server.set_succeeded(self.aiming_result)
+    #
+    #     else:
+    #         self.aiming_result.found_target = True
+    #         self.aim_server.set_succeeded(self.aiming_result)
 
-        target_in_sight = self.aim()
-
-        self.aiming_feedback.aiming_state = "Baxter is Aiming"
-        self.aim_server.publish_feedback(self.aiming_feedback)
-
-        if not target_in_sight:
-            self.aiming_result.found_target = False
-            self.aim_server.set_succeeded(self.aiming_result)
-
-        else:
-            self.aiming_result.found_target = True
-            self.aim_server.set_succeeded(self.aiming_result)
 
 
 
-    def pick_up_gun(self, msg):
+
+    def tag_position(self, msg):
+        """ callback for april tag position
+
+        Args:
+            msg (Pose): pose of the april tag
+        """
+
+        self.tag_pose = msg
+
+
+
+
+
+    def pick_up_gun(self, pose_tag):
         """ callback function for Subscriber to /gun_pose
 
         The trajectory is divided into three stages
@@ -183,16 +204,16 @@ class LeftArm(object):
         4) pick up gun vertically to standoff location
 
         Args:
-            msg (Pose): pose of the april tag
+            pose_tag (Pose): pose of the april tag
         """
 
         # stage 1
         print("============ Move to gun ============")
-        pre_grasp = self.move_gripper(msg, pre_standoff=True)
+        pre_grasp = self.move_gripper(pose_tag, pre_standoff=True)
 
         # stage 2
         print("============ Move to gun handle ============")
-        grasp_handle = self.move_gripper(msg)
+        grasp_handle = self.move_gripper(pose_tag)
 
         # stage 3
         if pre_grasp and grasp_handle:
@@ -203,16 +224,16 @@ class LeftArm(object):
 
         # stage 4
         print("============ Lift gun off Table ============")
-        post_grasp = self.move_gripper(msg, post_standoff=True)
+        post_grasp = self.move_gripper(pose_tag, post_standoff=True)
 
 
 
 
-    def move_gripper(self, msg, pre_standoff=False, post_standoff=False):
+    def move_gripper(self, pose_tag, pre_standoff=False, post_standoff=False):
         """ moves gripper to a goal pose
 
         Args:
-            msg (Pose): pose of the april tag
+            pose_tag (Pose): pose of the april tag
 
         Returns:
             success (bool): True gripper makes it to pre-grasp standoff pose
@@ -222,7 +243,7 @@ class LeftArm(object):
         left_EE_pose = self.left_group.get_current_pose().pose
 
         # compute transformation of gun relative to EE
-        Teg = get_transform(msg)
+        Teg = get_transform(pose_tag)
 
         Tbe = get_transform(left_EE_pose)
         # tranformation from baxter to gun
