@@ -1,8 +1,11 @@
 # goal sent to client
-string action #which action baxter needs to do
+string obtaingun #which action baxter needs to do
+string aimgun
 ---
 # result sent to server
-bool completion #did the action complete successfully
+bool guncomplete #did the action complete successfully
+bool aimcomplete
 ---
 # feedback
-string feedback_state
+string gunstate
+string aimstate
