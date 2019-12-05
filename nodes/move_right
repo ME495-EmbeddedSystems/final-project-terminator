@@ -28,6 +28,14 @@ from sensor_msgs.msg import Range
 import tf.transformations as tr
 
 
+
+import roslib
+roslib.load_manifest('terminator')
+import actionlib
+from std_msgs.msg import Bool
+
+import terminator.msg
+
 from terminator import*
 
 
@@ -46,9 +54,9 @@ class RightArm(object):
 
 
         # TODO: move this to the commander main node
-        baxter_interface.RobotEnable().enable()
-        rospy.sleep(0.25)
-        print("Baxter is enabled")
+        # baxter_interface.RobotEnable().enable()
+        # rospy.sleep(0.25)
+        # print("Baxter is enabled")
 
         moveit_commander.roscpp_initialize(sys.argv)
         self.robot = moveit_commander.RobotCommander()
@@ -98,21 +106,94 @@ class RightArm(object):
 
 
         # init pose goal for left EE
-        init_goal = geometry_msgs.msg.Pose()
-        init_goal.orientation.x = -0.41
-        init_goal.orientation.y = 0.60
-        init_goal.orientation.z = 0.35
-        init_goal.orientation.w = 0.58
+        self.init_goal = geometry_msgs.msg.Pose()
+        self.init_goal.orientation.x = -0.41
+        self.init_goal.orientation.y = 0.60
+        self.init_goal.orientation.z = 0.35
+        self.init_goal.orientation.w = 0.58
 
-        init_goal.position.x = 0.68
-        init_goal.position.y = -0.25
-        init_goal.position.z = 0.30
+        self.init_goal.position.x = 0.68
+        self.init_goal.position.y = -0.25
+        self.init_goal.position.z = 0.30
 
 
         # place arm in init position
-        arm_init_pose(init_goal, self.right_group, self.position_tol, self.orientation_tol, "Right")
+        #arm_init_pose(init_goal, self.right_group, self.position_tol, self.orientation_tol, "Right")
 
-        print("Done Initializing Baxter")
+
+        # action server
+        self._triggerfeedback = terminator.msg.CommandsFeedback()
+        self._triggerresult = terminator.msg.CommandsResult()
+
+        self._firefeedback = terminator.msg.CommandsFeedback()
+        self._fireresult = terminator.msg.CommandsResult()
+
+        self._astrig = actionlib.SimpleActionServer("triggercommander", terminator.msg.CommandsAction, execute_cb=self.triggerexecute_cb, auto_start = False)
+        self._asfire = actionlib.SimpleActionServer("firecommander", terminator.msg.CommandsAction, execute_cb=self.fireexecute_cb, auto_start = False)
+
+        self._astrig.start()
+        self._asfire.start()
+
+
+        print("Done Initializing Baxter Right Arm")
+
+
+
+    def triggerexecute_cb(self, goal):
+        print("in trigger cb")
+        # helper variables
+        r = rospy.Rate(1)
+        success = True
+
+        if goal.actionname == "moveto_trigger":
+            if self._astrig.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % 'right_arm got trigger')
+                self._astrig.set_preempted()
+                success = False
+
+            arm_init_pose(self.init_goal, self.right_group, self.position_tol, self.orientation_tol, "Right")
+            success = self.position_trigger()
+
+        else:
+            print(":( - don't get right arm to trigger")
+            success = False
+
+        if success:
+            self._triggerresult.completion = True
+            rospy.loginfo('%s: Succeeded' % 'right_arm got trigger')
+            self._astrig.set_succeeded(self._triggerresult)
+        else:
+            self._triggerresult.completion = False
+            self._astrig.set_succeeded(self._triggerresult)
+
+
+    def fireexecute_cb(self, goal):
+        print("in trigger cb")
+        # helper variables
+        r = rospy.Rate(1)
+        success = True
+
+        if goal.actionname == "fire":
+            if self._asfire.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % 'fired!')
+                self._asfire.set_preempted()
+                success = False
+
+            self.fire_gun()
+            success = True
+
+
+        else:
+            print(":( - didn't fire...")
+            success = False
+
+        if success:
+            self._fireresult.completion = True
+            rospy.loginfo('%s: Succeeded' % 'fired!')
+            self._asfire.set_succeeded(self._fireresult)
+        else:
+            self._fireresult.completion = False
+
 
 
 
@@ -123,6 +204,8 @@ class RightArm(object):
         1) move gripper to stand off location
         2) place gripper on trigger
 
+        Return:
+            success (bool): true if ready to pull trigger
         """
 
         # stage 1
@@ -190,7 +273,7 @@ class RightArm(object):
 
 
         print("============ Press `Enter` to move gripper ============")
-        raw_input()
+        #raw_input()
 
         try:
             # execute path
@@ -199,7 +282,7 @@ class RightArm(object):
             self.right_group.clear_pose_targets()
 
             # wait for baxter to get to goal
-            rospy.sleep(4)
+            rospy.sleep(2)
 
         except (rospy.ServiceException, rospy.ROSException), e:
             rospy.loginfo("Service call failed: %s" % (e,))
@@ -235,7 +318,7 @@ class RightArm(object):
 
 
         print("============ Press `Enter` to move gripper ============")
-        raw_input()
+        #raw_input()
 
         try:
             # execute path
@@ -244,16 +327,23 @@ class RightArm(object):
             self.right_group.clear_pose_targets()
 
             # wait for baxter to get to goal
-            rospy.sleep(4)
+            rospy.sleep(2)
 
         except (rospy.ServiceException, rospy.ROSException), e:
             rospy.loginfo("Service call failed: %s" % (e,))
 
 
 
+        return True
+
+
+
+
+    def fire_gun(self):
+
         # stage 3
         print("============ Press `Enter` to close left gripper ============")
-        raw_input()
+        #raw_input()
         self.right_gripper.close()
         rospy.sleep(2)
 
@@ -268,7 +358,7 @@ def main():
     try:
         right_arm = RightArm()
 
-        right_arm.position_trigger()
+        #right_arm.position_trigger()
 
     except rospy.ROSInterruptException:
         return

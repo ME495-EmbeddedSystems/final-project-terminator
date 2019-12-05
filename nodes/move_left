@@ -59,10 +59,10 @@ class LeftArm(object):
         moveit_commander.roscpp_initialize(joint_state_topic)
 
 
-        # TODO: move this to the commander main node
-        baxter_interface.RobotEnable().enable()
-        rospy.sleep(0.25)
-        print("Baxter is enabled")
+        # # TODO: move this to the commander main node
+        # baxter_interface.RobotEnable().enable()
+        # rospy.sleep(0.25)
+        # print("Baxter is enabled")
 
 
         #moveit_commander.roscpp_initialize(sys.argv)
@@ -107,11 +107,11 @@ class LeftArm(object):
         self.prestandoff = 0.15
         self.poststandoff = 0.2
         # vertical distance from gun to tag
-        self.vert_tg = 0.2413
+        self.vert_tg = 0.2413 - 0.0254/2
 
         # position adjustment parameters
         self.x_coord = 0.127
-        self.y_coord = 0.0762
+        self.y_coord = 0.0762 + 0.0762
         self.z_coord = 0.0254
 
         # trajectory in RVIZ
@@ -122,15 +122,15 @@ class LeftArm(object):
 
 
         # init pose goal for right EE
-        init_goal = geometry_msgs.msg.Pose()
-        init_goal.orientation.x = 0.065
-        init_goal.orientation.y = 0.766
-        init_goal.orientation.z = -0.022
-        init_goal.orientation.w = 0.639
+        self.init_goal = geometry_msgs.msg.Pose()
+        self.init_goal.orientation.x = 0.065
+        self.init_goal.orientation.y = 0.766
+        self.init_goal.orientation.z = -0.022
+        self.init_goal.orientation.w = 0.639
 
-        init_goal.position.x = 0.415
-        init_goal.position.y = 0.531
-        init_goal.position.z = -0.15
+        self.init_goal.position.x = 0.415
+        self.init_goal.position.y = 0.531
+        self.init_goal.position.z = -0.15
 
 
         # pose of the tag
@@ -138,7 +138,7 @@ class LeftArm(object):
 
 
         # place arm in init position
-        arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
+        #arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
         #self.shoot_pose()
 
         # subscribe to gun pose
@@ -168,7 +168,7 @@ class LeftArm(object):
 
 
 
-        print("Done Initializing Baxter")
+        print("Done Initializing Baxter Left Arm")
 
 
 
@@ -200,6 +200,7 @@ class LeftArm(object):
                 self._asgun.set_preempted()
                 success = False
 
+            arm_init_pose(self.init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
             success = self.pick_up_gun(self.tag_pose)
 
         else:
@@ -283,7 +284,7 @@ class LeftArm(object):
         # stage 3
         if pre_grasp and grasp_handle:
             print("============ Press `Enter` to close left gripper ============")
-            raw_input()
+            #raw_input()
             self.left_gripper.close()
             rospy.sleep(2)
 
@@ -374,7 +375,7 @@ class LeftArm(object):
         pose_goal.orientation.w = self.orientation_w
 
         success = False
-
+        ctr = 0
         while not success:
             # develop a trajectory of waypoints
             plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
@@ -416,6 +417,11 @@ class LeftArm(object):
 
                 print("Goal")
                 print(pose_goal)
+
+            ctr += 1
+
+            if ctr == 3:
+                break
 
         return success
 

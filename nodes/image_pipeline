@@ -144,6 +144,13 @@ class imageProcessor:
     def distributeRectified(self, data):
         self.publishRectified.publish(data)
 
+
+    def image_size(self, data):
+        print("Height", data.height)
+        print("Width", data.width)
+
+
+
     # Constructor method
     def __init__(self):
         self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_initial_image)
@@ -167,6 +174,10 @@ class imageProcessor:
 
         # /camera_rect/image_rect
 
+
+        ##########
+        self.image_Sub = rospy.Subscriber("/darknet_ros/detection_image", Image, self.image_size)
+        #########
 
 
         # Subscribe to YOLO ROS's description of where the objects are
