@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 
+
 """
+
 PUBLSIHERS:
-    + display_trajectory_publisher (/move_group/display_planned_path) - displays trajectory in RViz
-    + aim_pub (/baxter_aiming) - publishes bool
+    +
 
 SUBSCRIBERS:
-    + gun_pose_sub (/targetBox) - subscribes to targetBox, calls self.aim
-    + gun_pose_sub (/start_aiming) - subscribes to start_aiming, calls self.initiate_aiming
-
-SERVICES:
-    + _as (guncommander) - calls service to inform commander node
+    +
 """
 
 from __future__ import division
@@ -50,9 +47,7 @@ from terminator import*
 
 
 class LeftArm(object):
-    """
-    initializes baxters left arm
-    """
+    """ manipulates baxters left arm """
 
     def __init__(self):
 
@@ -63,6 +58,13 @@ class LeftArm(object):
         joint_state_topic = ['joint_states:=/robot/joint_states']
         moveit_commander.roscpp_initialize(joint_state_topic)
 
+
+        # TODO: move this to the commander main node
+        baxter_interface.RobotEnable().enable()
+        rospy.sleep(0.25)
+        print("Baxter is enabled")
+
+
         #moveit_commander.roscpp_initialize(sys.argv)
         moveit_commander.roscpp_initialize(sys.argv)
         self.robot = moveit_commander.RobotCommander()
@@ -71,6 +73,7 @@ class LeftArm(object):
         # size of April tag
         # important for placement of gripper
         self.tag = 0.0873125
+
 
         self.left_group = moveit_commander.MoveGroupCommander("left_arm")
 
@@ -99,6 +102,7 @@ class LeftArm(object):
         self.orientation_z = -0.0048
         self.orientation_w = 0.717
 
+
         # Amount to pull back pre and post grip (approach, retreat)
         self.prestandoff = 0.15
         self.poststandoff = 0.2
@@ -116,6 +120,7 @@ class LeftArm(object):
             moveit_msgs.msg.DisplayTrajectory,
             queue_size=20)
 
+
         # init pose goal for right EE
         init_goal = geometry_msgs.msg.Pose()
         init_goal.orientation.x = 0.065
@@ -127,24 +132,15 @@ class LeftArm(object):
         init_goal.position.y = 0.531
         init_goal.position.z = -0.15
 
-<<<<<<< HEAD
-=======
 
         # pose of the tag
         self.tag_pose = None
 
 
->>>>>>> upstream/master
         # place arm in init position
         arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
         #self.shoot_pose()
 
-<<<<<<< HEAD
-        # status of baxter
-        # is armed and is aiming
-        self.armed = False
-        self.is_aiming = False
-=======
         # subscribe to gun pose
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
         #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.pick_up_gun)
@@ -170,19 +166,11 @@ class LeftArm(object):
         self._asgun.start()
         self._asaim.start()
 
->>>>>>> upstream/master
+
 
         print("Done Initializing Baxter")
 
-<<<<<<< HEAD
-        # subscribe to gun pose
-        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
-        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal_waypoints)
-        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.pick_up_gun)
-        self.gun_pose_sub = rospy.Subscriber('/targetBox', Point, self.aim)
-=======
 
->>>>>>> upstream/master
 
     # def execute(self, goal):
     #
@@ -200,9 +188,6 @@ class LeftArm(object):
     #         self.aim_server.set_succeeded(self.aiming_result)
 
 
-<<<<<<< HEAD
-        self.aim_pub = rospy.Publisher('/baxter_aiming', Bool, queue_size=10)
-=======
     def gunexecute_cb(self, goal):
         print("in gun cb")
         # helper variables
@@ -214,14 +199,9 @@ class LeftArm(object):
                 rospy.loginfo('%s: Preempted' % 'left_arm got gun')
                 self._asgun.set_preempted()
                 success = False
->>>>>>> upstream/master
 
             success = self.pick_up_gun(self.tag_pose)
 
-<<<<<<< HEAD
-    def iniate_aiming(self, data):
-        self.is_aiming = data.data
-=======
         else:
             print(":( - didn't get gun")
 
@@ -246,13 +226,9 @@ class LeftArm(object):
                 rospy.loginfo('%s: Preempted' % self._action_name)
                 self._asaim.set_preempted()
                 success = False
->>>>>>> upstream/master
 
             success = self.aim()
 
-<<<<<<< HEAD
-    def pick_up_gun(self, msg):
-=======
             self._aimfeedback.feedback_state = "Still Aiming"
             self._asaim.publish_feedback(self._aimfeedback)
 
@@ -282,7 +258,6 @@ class LeftArm(object):
 
 
     def pick_up_gun(self, pose_tag):
->>>>>>> upstream/master
         """ callback function for Subscriber to /gun_pose
 
         The trajectory is divided into five stages
@@ -317,9 +292,6 @@ class LeftArm(object):
         post_grasp = self.move_gripper(pose_tag, post_standoff=True)
 
 
-<<<<<<< HEAD
-    def move_gripper(self, msg, pre_standoff=False, post_standoff=False):
-=======
         # stage 5
         print("============ Moving too Aiming Pose  ============")
         aiming_placed = self.move_gripper(pose_tag, aiming=True)
@@ -334,7 +306,6 @@ class LeftArm(object):
 
 
     def move_gripper(self, pose_tag, pre_standoff=False, post_standoff=False, grasp=False, aiming=False):
->>>>>>> upstream/master
         """ moves gripper to a goal pose
 
         Args:
@@ -356,6 +327,7 @@ class LeftArm(object):
 
         # pose of gun relative to baxter
         quat, trans = extract_pose(Tbg)
+
 
         # move EE right behind gun and stop
         pose_goal = geometry_msgs.msg.Pose()
@@ -387,8 +359,6 @@ class LeftArm(object):
             pose_goal.position.y = left_EE_pose.position.y
             pose_goal.position.z = left_EE_pose.position.z + self.z_coord
 
-<<<<<<< HEAD
-=======
 
         elif aiming:
             print("aiming")
@@ -397,7 +367,6 @@ class LeftArm(object):
             pose_goal.position.z = 0.20
 
 
->>>>>>> upstream/master
         # use pre-defined orientation
         pose_goal.orientation.x = self.orientation_x
         pose_goal.orientation.y = self.orientation_y
@@ -451,15 +420,15 @@ class LeftArm(object):
         return success
 
 
+
     def shoot_pose(self):
-        """
-        TODO: move to end of pick up gun
-        #########################################
-        move to initial shooting position
-        restrict z motion is x-axis
-        get pose of EE
-        """"
+        # TODO: move to end of pick up gun
+        ##########################################
+        # move to initial shooting position
+        # restrict z motion is x-axis
+        # get pose of EE
         left_EE_pose = self.left_group.get_current_pose().pose
+
 
         pose_goal = geometry_msgs.msg.Pose()
         pose_goal.orientation.x = self.orientation_x
@@ -471,6 +440,7 @@ class LeftArm(object):
         pose_goal.position.y = 0.30
         pose_goal.position.z = 0.20
 
+
         plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
         print("The fraction of path covered")
         print(fraction)
@@ -478,6 +448,8 @@ class LeftArm(object):
         display_trajectory(plan, self.robot, self.display_trajectory_publisher)
 
         rospy.sleep(2)
+
+
 
         print("============ Press `Enter` to move to shooting pose ============")
         raw_input()
@@ -505,13 +477,9 @@ class LeftArm(object):
 
         ##########################################
 
-<<<<<<< HEAD
-    def aim(self, msg):
-=======
 
 
     def target_position(self, msg):
->>>>>>> upstream/master
         """ callback for subscriber to /targetBox
 
         Positions the y and z coordinates of the left EE to align with the target
@@ -538,28 +506,18 @@ class LeftArm(object):
             print("=== ERROR NOT TARGET FOUND ===")
             return False
 
-<<<<<<< HEAD
-            # move in y direction until goal is met
-            y_error = y_goal - y_target
-            z_error = z_goal - z_target
-=======
 
         print("==== AIMING ====")
->>>>>>> upstream/master
 
         # goal tolerance in pixels
         tol = 20
         y_goal = 640 / 2
         z_goal = 400 / 2
 
-<<<<<<< HEAD
-            if abs(y_error) > tol or abs(z_error) > tol:
-=======
 
         # amount to move EE
         dy = 0.0254 / 2
         dz = 0.0254 / 2
->>>>>>> upstream/master
 
 
         # move in y direction until goal is met
@@ -573,13 +531,9 @@ class LeftArm(object):
         success = True
 
 
-<<<<<<< HEAD
-                if abs(z_error) > tol:
-=======
         if abs(y_error) > tol or abs(z_error) > tol:
 
             success = False
->>>>>>> upstream/master
 
             # get state feedback
             left_EE_pose = self.left_group.get_current_pose().pose
@@ -587,14 +541,6 @@ class LeftArm(object):
             pose_goal = geometry_msgs.msg.Pose()
             pose_goal = left_EE_pose
 
-<<<<<<< HEAD
-                # plan and move
-                plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
-                # execute path
-                self.left_group.execute(plan, wait=True)
-                self.left_group.stop()
-                self.left_group.clear_pose_targets()
-=======
 
             if abs(y_error) > tol:
 
@@ -602,20 +548,12 @@ class LeftArm(object):
                 if y_error > 0:
                     print("Moving to the left")
                     pose_goal.position.y = left_EE_pose.position.y + dy
->>>>>>> upstream/master
 
                 # move right:
                 else:
                     print("Moving to the right")
                     pose_goal.position.y = left_EE_pose.position.y - dy
 
-<<<<<<< HEAD
-            # target is withing sight
-            else:
-                aim = Bool()
-                aim.data = False
-                self.aim_pub.Publish(aim)
-=======
 
             if abs(z_error) > tol:
 
@@ -642,7 +580,9 @@ class LeftArm(object):
 
 
         return success
->>>>>>> upstream/master
+
+
+
 
 
 def main():
