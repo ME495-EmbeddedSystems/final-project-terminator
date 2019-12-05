@@ -39,8 +39,9 @@ import actionlib
 from std_msgs.msg import Bool
 
 
-from terminator.msg import AimGunAction, AimGunFeedback, AimGunResult
-
+#from terminator.msg import AimGunAction, AimGunFeedback, AimGunResult
+#from terminator.msg import CommandsAction, CommandsFeedback, CommandsResult
+import terminator.msg
 
 from terminator import*
 
@@ -154,6 +155,16 @@ class LeftArm(object):
         # self.aiming_result = AimGunResult()
 
         # action server
+        self._gunresult = terminator.msg.CommandsResult()
+        self._aimresult = terminator.msg.CommandsResult()
+
+        self._aimfeedback = terminator.msg.CommandsFeedback()
+
+        self._asgun = actionlib.SimpleActionServer("guncommander", terminator.msg.CommandsAction, execute_cb=self.gunexecute_cb, auto_start = False)
+        self._asaim = actionlib.SimpleActionServer("aimcommander", terminator.msg.CommandsAction, execute_cb=self.aimexecute_cb, auto_start = False)
+
+        self._asgun.start()
+        self._asaim.start()
 
 
 
@@ -177,6 +188,61 @@ class LeftArm(object):
     #         self.aim_server.set_succeeded(self.aiming_result)
 
 
+    def gunexecute_cb(self, goal):
+        print("in gun cb")
+        # helper variables
+        r = rospy.Rate(1)
+        success = True
+
+        if goal.actionname == "get_gun":
+            if self._asgun.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % 'left_arm got gun')
+                self._asgun.set_preempted()
+                success = False
+
+            success = self.pick_up_gun(self.tag_pose)
+
+        else:
+            print(":( - didn't get gun")
+
+        if success:
+            self._gunresult.completion = True
+            rospy.loginfo('%s: Succeeded' % 'left_arm got gun')
+            print(self._gunresult.completion)
+            self._asgun.set_succeeded(self._gunresult)
+        else:
+            self._gunresult.completion = False
+            self._asgun.set_succeeded(self._gunresult)
+
+
+    def aimexecute_cb(self, goal):
+        print("in aim cb")
+        # helper variables
+        r = rospy.Rate(1)
+        success = True
+
+        if goal.actionname == "aim_gun":
+            if self._asaim.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % self._action_name)
+                self._asaim.set_preempted()
+                success = False
+
+            success = self.aim()
+
+            self._aimfeedback.feedback_state = "Still Aiming"
+            self._asaim.publish_feedback(self._aimfeedback)
+
+        else:
+            print(":( - didn't aim gun")
+
+        if success:
+            self._aimresult.completion = True
+            rospy.loginfo('%s: Succeeded' % 'left_arm aimed gun')
+            print(self._aimresult.completion)
+            self._asaim.set_succeeded(self._aimresult)
+        else:
+            self._aimresult.completion = False
+            self._asaim.set_succeeded(self._aimresult)
 
 
 
@@ -191,17 +257,16 @@ class LeftArm(object):
 
 
 
-
-
     def pick_up_gun(self, pose_tag):
         """ callback function for Subscriber to /gun_pose
 
-        The trajectory is divided into three stages
+        The trajectory is divided into five stages
 
         1) move gripper to standoff location
         2) move gripper to handle
         3) grasp the gun
         4) pick up gun vertically to standoff location
+        5) go the aiming position
 
         Args:
             pose_tag (Pose): pose of the april tag
@@ -213,7 +278,7 @@ class LeftArm(object):
 
         # stage 2
         print("============ Move to gun handle ============")
-        grasp_handle = self.move_gripper(pose_tag)
+        grasp_handle = self.move_gripper(pose_tag, grasp=True)
 
         # stage 3
         if pre_grasp and grasp_handle:
@@ -227,9 +292,20 @@ class LeftArm(object):
         post_grasp = self.move_gripper(pose_tag, post_standoff=True)
 
 
+        # stage 5
+        print("============ Moving too Aiming Pose  ============")
+        aiming_placed = self.move_gripper(pose_tag, aiming=True)
+
+        if post_grasp and aiming_placed:
+            # made it this far it is a success
+            return True
+
+        return False
 
 
-    def move_gripper(self, pose_tag, pre_standoff=False, post_standoff=False):
+
+
+    def move_gripper(self, pose_tag, pre_standoff=False, post_standoff=False, grasp=False, aiming=False):
         """ moves gripper to a goal pose
 
         Args:
@@ -275,12 +351,20 @@ class LeftArm(object):
             pose_goal.position.y = left_EE_pose.position.y
             pose_goal.position.z = left_EE_pose.position.z + self.poststandoff
 
-        else:
+
+        elif grasp:
             print("grasp")
             # move to grasp pose
             pose_goal.position.x = left_EE_pose.position.x + self.x_coord
             pose_goal.position.y = left_EE_pose.position.y
             pose_goal.position.z = left_EE_pose.position.z + self.z_coord
+
+
+        elif aiming:
+            print("aiming")
+            pose_goal.position.x = 0.87
+            pose_goal.position.y = 0.30
+            pose_goal.position.z = 0.20
 
 
         # use pre-defined orientation
@@ -418,17 +502,22 @@ class LeftArm(object):
             success (bool): if camera is aligned with target returns True
         """
 
+        if self.target_y == None or self.target_z == None:
+            print("=== ERROR NOT TARGET FOUND ===")
+            return False
+
+
         print("==== AIMING ====")
 
         # goal tolerance in pixels
         tol = 20
-        y_goal = 320
-        z_goal = 320
+        y_goal = 640 / 2
+        z_goal = 400 / 2
 
 
         # amount to move EE
-        dy = 0.0254
-        dz = 0.0254
+        dy = 0.0254 / 2
+        dz = 0.0254 / 2
 
 
         # move in y direction until goal is met
