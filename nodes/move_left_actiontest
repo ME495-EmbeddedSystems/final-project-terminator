@@ -64,7 +64,7 @@ class LeftArm(object):
             self._asgun.set_succeeded(self._gunresult)
         else:
             self._gunresult.completion = False
-
+            self._asgun.set_succeeded(self._gunresult)
 
     def aimexecute_cb(self, goal):
         print("in aim cb")
@@ -88,7 +88,7 @@ class LeftArm(object):
             self._asaim.set_succeeded(self._aimresult)
         else:
             self._aimresult.completion = False
-
+            self._asaim.set_succeeded(self._aimresult)
 
 
 
