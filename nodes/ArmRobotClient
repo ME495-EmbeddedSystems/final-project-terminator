@@ -27,8 +27,16 @@ def main():
 
     goal = AimGunGoal()
     goal.aim = "Aim gun"
+
+    #gun_aimed = False
+    #while not gun_aimed:
     client.send_goal(goal)
-    client.wait_for_result(rospy.Duration.from_sec(5.0))
+    client.wait_for_result(rospy.Duration.from_sec(0.5))
+
+    result = client.get_result()
+    print(result)
+
+
 
 
 if __name__ == '__main__':
