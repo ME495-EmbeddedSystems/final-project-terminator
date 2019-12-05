@@ -47,6 +47,7 @@ class AimTarget(object):
 		# self.aim_group.set_max_velocity_scaling_factor(0.6)
 		# self.aim_group.set_max_acceleration_scaling_factor(0.6)
 
+		'''
 		# initialize error
 		self.y_err_i = 0
 		self.z_err_i = 0
@@ -76,8 +77,12 @@ class AimTarget(object):
 
 
 
-
+		'''
 	def aim_goal(self,msg):
+
+		'''
+		These code are for aiming the target cup
+		
 		# frame center in pixel coordinates
 		# full image is 416 * 416
 		y_ref = 208
@@ -192,74 +197,74 @@ class AimTarget(object):
 			pass
 
 
+	'''
 
 
+		""" moves baxter's left hand to a pose goal """	
+		aim_goal = geometry_msgs.msg.Pose()
 
-	# 	""" moves baxter's left hand to a pose goal """	
-	# 	aim_goal = geometry_msgs.msg.Pose()
+		# try to set the orientation constant:
 
-	# 	# try to set the orientation constant:
-
-	# 	q = quaternion_from_euler(3.14, 1.5707, 3.14)
-	# 	aim_goal.orientation.x = q[0]
-	# 	aim_goal.orientation.y = q[1]
-	# 	aim_goal.orientation.z = q[2]
-	# 	aim_goal.orientation.w = q[3]	
+		q = quaternion_from_euler(3.14, 1.5707, 3.14)
+		aim_goal.orientation.x = q[0]
+		aim_goal.orientation.y = q[1]
+		aim_goal.orientation.z = q[2]
+		aim_goal.orientation.w = q[3]	
 	
-	# 	aim_goal.position.x = 0.832159
-	# 	aim_goal.position.y = 0.531532
-	# 	aim_goal.position.z = -0.10953
+		aim_goal.position.x = 0.832159
+		aim_goal.position.y = 0.531532
+		aim_goal.position.z = -0.10953
 	
- #        ###########
+        ###########
 		
-	# 	# possible position:
+		# possible position:
 
-	# 	# aim_goal.orientation.x = -0.618235
-	# 	# aim_goal.orientation.y = 0.784464
-	# 	# aim_goal.orientation.z = 0.016503
-	# 	# aim_goal.orientation.w = 0.0461452	
+		# aim_goal.orientation.x = -0.618235
+		# aim_goal.orientation.y = 0.784464
+		# aim_goal.orientation.z = 0.016503
+		# aim_goal.orientation.w = 0.0461452	
 
-	# 	# aim_goal.position.x = -0.205829
-	# 	# aim_goal.position.y = 0.654037
-	# 	# aim_goal.position.z = -0.389637
+		# aim_goal.position.x = -0.205829
+		# aim_goal.position.y = 0.654037
+		# aim_goal.position.z = -0.389637
 
 
-	# 	# #initial configuration
+		# #initial configuration
 
-	# 	# aim_goal.orientation.x = 0.065
-	# 	# aim_goal.orientation.y = 0.766
-	# 	# aim_goal.orientation.z = -0.022
-	# 	# aim_goal.orientation.w = 0.639
+		# aim_goal.orientation.x = 0.065
+		# aim_goal.orientation.y = 0.766
+		# aim_goal.orientation.z = -0.022
+		# aim_goal.orientation.w = 0.639
 
-	# 	# aim_goal.position.x = 0.415
-	# 	# aim_goal.position.y = 0.531
-	# 	# aim_goal.position.z = -0.15
+		# aim_goal.position.x = 0.415
+		# aim_goal.position.y = 0.531
+		# aim_goal.position.z = -0.15
 
-	# 	self.aim_group.set_pose_target(aim_goal)
-	# 	# self.aim_group.set_start_state_to_current_state()        
-		# plan to path goal
+		self.aim_group.set_pose_target(aim_goal)
+		# self.aim_group.set_start_state_to_current_state()        
+		plan to path goal
 
-		# plan = self.aim_group.plan()
-		# self.display_trajectory(plan)
+		plan = self.aim_group.plan()
+		self.display_trajectory(plan)
 
-	# 	# execute plan
-	# 	confirmed = raw_input('Execute aim_target? y/n')
-	# 	if confirmed == "y":
-	# 		self.aim_group.execute(plan, wait=True)        
-	# 		self.aim_group.stop()
-	# 		self.aim_group.clear_pose_targets()
+		# execute plan
+		confirmed = raw_input('Execute aim_target? y/n')
+		if confirmed == "y":
+			self.aim_group.execute(plan, wait=True)        
+			self.aim_group.stop()
+			self.aim_group.clear_pose_targets()
 
-	# 	current_pose = self.aim_group.get_current_pose().pose
-	# 	print("current_pose is:")
-	# 	print(current_pose)
-	# 	print("the goal pose is :")
-	# 	print(aim_goal)
+		current_pose = self.aim_group.get_current_pose().pose
+		print("current_pose is:")
+		print(current_pose)
+		print("the goal pose is :")
+		print(aim_goal)
 
-	# 	if self.check_aim(aim_goal, current_pose):
-	# 		print("Aiming!")
+		if self.check_aim(aim_goal, current_pose):
+			print("Aiming!")
 
-	# 	else:
-	# 		print("Not Aiming!")
+		else:
+			print("Not Aiming!")
 
 
 		
@@ -293,26 +298,7 @@ class AimTarget(object):
 
 		return True
 	
-	
-		# return self.wait_for_state_update(box_is_known=True, timeout=timeout)
-  
 
-	# def add_box(self, timeout=4):
-	#     """ Adds a box to rviz """
-
-	#     # Add Objects to Planning Scene
-	#     self.box_name = 'table'
-	#     self.box_pose = PoseStamped()
-	#     # Can reference to base frame
-	#     # Or can reference to EE finger frame
-	#     # for grasping
-	#     self.box_pose.header.frame_id = "base"
-	#     self.box_pose.pose.position.x = 0.5
-	#     self.box_pose.pose.position.z = -0.3095
-	#     self.box_pose.pose.orientation.w = 1.0
-	#     # Length, Width, Height
-	#     self.scene.add_box(self.box_name, self.box_pose, size=(0.6, 0.8, 0.1))
-	#     # return self.wait_for_state_update(box_is_known=True, timeout=timeout)
 
 
 
