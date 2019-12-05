@@ -24,40 +24,69 @@ import terminator.msg
 
 class RightArm(object):
     # create messages that are used to publish feedback/result
-    _aimfeedback = terminator.msg.CommandsFeedback()
-    _aimresult = terminator.msg.CommandsResult()
+    _triggerfeedback = terminator.msg.CommandsFeedback()
+    _triggerresult = terminator.msg.CommandsResult()
 
+    _firefeedback = terminator.msg.CommandsFeedback()
+    _fireresult = terminator.msg.CommandsResult()
 
 
     def __init__(self):
         print("init")
-        self._as = actionlib.SimpleActionServer("aimcommander", terminator.msg.CommandsAction, self.execute_cb, auto_start = False)
-        self._as.start()
-        print("made it")
+        self._astrig = actionlib.SimpleActionServer("triggercommander", terminator.msg.CommandsAction, execute_cb=self.triggerexecute_cb, auto_start = False)
+        self._asfire = actionlib.SimpleActionServer("firecommander", terminator.msg.CommandsAction, execute_cb=self.fireexecute_cb, auto_start = False)
 
-    def execute_cb(self, goal):
-        print("in cb")
+        self._astrig.start()
+        print("trigger started")
+
+        self._asfire.start()
+        print("fire started")
+
+    def triggerexecute_cb(self, goal):
+        print("in trigger cb")
         # helper variables
         r = rospy.Rate(1)
         success = True
 
-        if goal.actionname == "aim_gun":
-            if self._as.is_preempt_requested():
-                rospy.loginfo('%s: Preempted' % self._action_name)
-                self._as.set_preempted()
+        if goal.actionname == "moveto_trigger":
+            if self._astrig.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % 'right_arm got trigger')
+                self._astrig.set_preempted()
                 success = False
-            print("yay")
+            print("yay - got right arm to trigger")
         else:
-            print(":(")
+            print(":( - don't get right arm to trigger")
             success = False
 
         if success:
-            self._aimresult.completion = True
-            rospy.loginfo('%s: Succeeded' % 'right_arm')
-            self._as.set_succeeded(self._aimresult)
+            self._triggerresult.completion = True
+            rospy.loginfo('%s: Succeeded' % 'right_arm got trigger')
+            self._astrig.set_succeeded(self._triggerresult)
         else:
-            self._aimresult.completion = False
+            self._triggerresult.completion = False
 
+    def fireexecute_cb(self, goal):
+        print("in trigger cb")
+        # helper variables
+        r = rospy.Rate(1)
+        success = True
+
+        if goal.actionname == "fire":
+            if self._asfire.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % 'fired!')
+                self._asfire.set_preempted()
+                success = False
+            print("yay - fired!!!")
+        else:
+            print(":( - didn't fire...")
+            success = False
+
+        if success:
+            self._fireresult.completion = True
+            rospy.loginfo('%s: Succeeded' % 'fired!')
+            self._asfire.set_succeeded(self._fireresult)
+        else:
+            self._fireresult.completion = False
 
 
 if __name__ == '__main__':

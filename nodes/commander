@@ -32,7 +32,8 @@ def main():
 
     pickgunclient = actionlib.SimpleActionClient('guncommander', terminator.msg.CommandsAction)
     aimclient = actionlib.SimpleActionClient('aimcommander', terminator.msg.CommandsAction)
-
+    triggerclient = actionlib.SimpleActionClient('triggercommander', terminator.msg.CommandsAction)
+    fireclient = actionlib.SimpleActionClient('firecommander', terminator.msg.CommandsAction)
 
     print("next")
     pickgunclient.wait_for_server()
@@ -53,7 +54,7 @@ def main():
         pickgunclient.stop_tracking_goal()
         pickgunclient.cancel_all_goals()
 
-        print("canceled")
+        print("canceled getting gun")
 
         aimgoal = terminator.msg.CommandsGoal(actionname='aim_gun')
 
@@ -68,28 +69,49 @@ def main():
         # Right hand moves to the trigger
         if aimed.completion == True:
             print("Baxter has acquired target and is aiming")
+            time.sleep(5)
+
+            aimclient.stop_tracking_goal()
+            aimclient.cancel_all_goals()
+
+            print("canceled aiming")
 
             triggergoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
-            client.send_goal(triggergoal)
-            client.wait_for_result()
-            ontrigger = client.get_result()
+            triggerclient.send_goal(triggergoal)
+            triggerclient.wait_for_result()
+            ontrigger = triggerclient.get_result()
+
+            print(ontrigger.completion)
 
             # User confirmation to fire
-            if ontrigger == True:
+            if ontrigger.completion == True:
                 print("Baxter awaiting command to fire")
-                user_input = raw_input("Permission to fire? Yes or No")
+
+                time.sleep(5)
+
+                triggerclient.stop_tracking_goal()
+                triggerclient.cancel_all_goals()
+
+                print("canceled getting to trigger")
+
+
 
                 # Pull the trigger
-                if (user_input.lower() == "yes" or user_input.lower() == "y"):
-                    firegoal = terminator.msg.CommandsGoal(actionname='fire')
-                    client.send_goal(firegoal)
-                    client.wait_for_result()
-                    fired = client.get_result()
+                pulled = False
+                while pulled != True:
+                    user_input = raw_input("Permission to fire? Yes or No:   ")
+                    if (user_input.lower() == "yes" or user_input.lower() == "y"):
+                        firegoal = terminator.msg.CommandsGoal(actionname='fire')
+                        fireclient.send_goal(firegoal)
+                        fireclient.wait_for_result()
+                        fired = fireclient.get_result()
 
-                    if fired == True:
-                        print("Baxter has successfully shot (or attempted to)")
-                else:
-                    print("Please select another option")
+                        if fired.completion == True:
+                            print("Baxter has successfully shot (or attempted to)")
+                            pulled = True
+                    else:
+                        print("Please select another option")
+
 
 
 if __name__ == '__main__':
