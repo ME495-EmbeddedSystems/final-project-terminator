@@ -242,7 +242,7 @@ class AimTarget(object):
 
 		self.aim_group.set_pose_target(aim_goal)
 		# self.aim_group.set_start_state_to_current_state()        
-		plan to path goal
+		# plan to path goal
 
 		plan = self.aim_group.plan()
 		self.display_trajectory(plan)
