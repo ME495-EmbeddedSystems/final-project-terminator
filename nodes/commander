@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+import rospy
+
+import roslib
+import sys
+import time
+
+import actionlib
+
+roslib.load_manifest('terminator')
+
+import terminator.msg
+
+
+"""
+Integrates all the nodes
+Receives messages to know the current state of the robot
+Sends messages to transition between different states of the robot to drive the motion sequence
+
+use action server
+  goals are executed on server side
+  goals are requested on client side
+"""
+
+def enableBaxter():
+#    baxter_interface.RobotEnable().enable()
+#    rospy.sleep(0.25)
+    print("Baxter is enabled")
+
+
+def main():
+
+    pickgunclient = actionlib.SimpleActionClient('guncommander', terminator.msg.CommandsAction)
+    aimclient = actionlib.SimpleActionClient('aimcommander', terminator.msg.CommandsAction)
+    triggerclient = actionlib.SimpleActionClient('triggercommander', terminator.msg.CommandsAction)
+    fireclient = actionlib.SimpleActionClient('firecommander', terminator.msg.CommandsAction)
+
+    print("next")
+    pickgunclient.wait_for_server()
+    print("received")
+
+    # Pick up the gun using the left hand
+    goal = terminator.msg.CommandsGoal(actionname="get_gun")
+    pickgunclient.send_goal(goal)
+    pickgunclient.wait_for_result()
+    gotgun = pickgunclient.get_result() #bool if baxter retrieved gun or not
+
+    print(pickgunclient.get_result())
+    # Move left hand to be in line with the target
+    if gotgun.completion == True:
+        print("Baxter is armed")
+        time.sleep(5)
+
+        pickgunclient.stop_tracking_goal()
+        pickgunclient.cancel_all_goals()
+
+        print("canceled getting gun")
+
+        aimgoal = terminator.msg.CommandsGoal(actionname='aim_gun')
+
+        #client.accept_new_goal()
+
+        aimclient.send_goal(aimgoal)
+        aimclient.wait_for_result()
+        aimed = aimclient.get_result()
+
+        print(aimed.completion)
+
+        # Right hand moves to the trigger
+        if aimed.completion == True:
+            print("Baxter has acquired target and is aiming")
+            time.sleep(5)
+
+            aimclient.stop_tracking_goal()
+            aimclient.cancel_all_goals()
+
+            print("canceled aiming")
+
+            triggergoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
+            triggerclient.send_goal(triggergoal)
+            triggerclient.wait_for_result()
+            ontrigger = triggerclient.get_result()
+
+            print(ontrigger.completion)
+
+            # User confirmation to fire
+            if ontrigger.completion == True:
+                print("Baxter awaiting command to fire")
+
+                time.sleep(5)
+
+                triggerclient.stop_tracking_goal()
+                triggerclient.cancel_all_goals()
+
+                print("canceled getting to trigger")
+
+
+
+                # Pull the trigger
+                pulled = False
+                while pulled != True:
+                    user_input = raw_input("Permission to fire? Yes or No:   ")
+                    if (user_input.lower() == "yes" or user_input.lower() == "y"):
+                        firegoal = terminator.msg.CommandsGoal(actionname='fire')
+                        fireclient.send_goal(firegoal)
+                        fireclient.wait_for_result()
+                        fired = fireclient.get_result()
+
+                        if fired.completion == True:
+                            print("Baxter has successfully shot (or attempted to)")
+                            pulled = True
+                    else:
+                        print("Please select another option")
+
+
+
+if __name__ == '__main__':
+    try:
+        rospy.init_node("commander_client_py")
+        enableBaxter()
+        main()
+    except rospy.ROSInterruptException:
+        print("program interrupted before baxter could shoot")
