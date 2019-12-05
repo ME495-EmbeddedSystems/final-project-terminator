@@ -1,0 +1,8 @@
+# goal sent to client
+string action #which action baxter needs to do
+---
+# result sent to server
+bool completion #did the action complete successfully
+---
+# feedback
+string feedback_state
