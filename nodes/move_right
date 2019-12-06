@@ -214,7 +214,7 @@ class RightArm(object):
         # stage 2
         grasp_pose = trigger_hand(grasp=True)
 
-        if grasp_pose and standoff_pose
+        if grasp_pose and standoff_pose:
             return True
 
         return False
