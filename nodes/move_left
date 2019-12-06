@@ -59,6 +59,9 @@ class LeftArm(object):
         moveit_commander.roscpp_initialize(joint_state_topic)
 
 
+        self.plan_attempts = 3
+
+
         # # TODO: move this to the commander main node
         # baxter_interface.RobotEnable().enable()
         # rospy.sleep(0.25)
@@ -246,6 +249,19 @@ class LeftArm(object):
             self._asaim.set_succeeded(self._aimresult)
 
 
+    def target_position(self, msg):
+        """ callback for subscriber to /targetBox
+
+        Positions the y and z coordinates of the left EE to align with the target
+
+        Args:
+            msg (Point): x, y, and z location in pixels of target
+        """
+        # in pixel coordinates, center of bounding box
+        # coordinate axis is in baxters frames
+        self.target_y = msg.x
+        self.target_z = msg.y
+
 
     def tag_position(self, msg):
         """ callback for april tag position
@@ -374,56 +390,17 @@ class LeftArm(object):
         pose_goal.orientation.z = self.orientation_z
         pose_goal.orientation.w = self.orientation_w
 
-        success = False
-        ctr = 0
-        while not success:
-            # develop a trajectory of waypoints
-            plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
+        # attempt to move left arm to goal
+        move_arm(left_EE_pose, pose_goal, self.left_group, self.robot, self.display_trajectory_publisher)
 
-            print("The fraction of path covered")
-            print(fraction)
+        # wait for baxter to get to goal
+        rospy.sleep(2)
 
-            # display plan in rviz
-            display_trajectory(plan, self.robot, self.display_trajectory_publisher)
+        # test if made it to pre-pick up position
+        left_EE_pose = self.left_group.get_current_pose().pose
 
-            rospy.sleep(2)
-
-            print("============ Press `Enter` to move gripper ============")
-            raw_input()
-
-            try:
-                # execute path
-                self.left_group.execute(plan, wait=True)
-                self.left_group.stop()
-                self.left_group.clear_pose_targets()
-
-                # wait for baxter to get to goal
-                rospy.sleep(2)
-
-            except (rospy.ServiceException, rospy.ROSException), e:
-                rospy.loginfo("Service call failed: %s" % (e,))
-
-            # test if made it to pre-pick up position
-            left_EE_pose = self.left_group.get_current_pose().pose
-
-            if made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol):
-                print("Goal Reached")
-                success = True
-
-            else:
-                print("Goal Not Reached!")
-                print("EE pose")
-                print(left_EE_pose)
-
-                print("Goal")
-                print(pose_goal)
-
-            ctr += 1
-
-            if ctr == 3:
-                break
-
-        return success
+        # check if orientation and position of goal are met
+        return made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol):
 
 
 
@@ -484,22 +461,6 @@ class LeftArm(object):
         ##########################################
 
 
-
-    def target_position(self, msg):
-        """ callback for subscriber to /targetBox
-
-        Positions the y and z coordinates of the left EE to align with the target
-
-        Args:
-            msg (Point): x, y, and z location in pixels of target
-        """
-        # in pixel coordinates, center of bounding box
-        # coordinate axis is in baxters frames
-        self.target_y = msg.x
-        self.target_z = msg.y
-
-
-
     def aim(self):
         """
         Positions the y and z coordinates of the left EE to align with the target
@@ -533,12 +494,13 @@ class LeftArm(object):
         print("Y ERROR: ", y_error)
         print("Z ERROR: ", z_error)
 
-
+        # does not need to aim
         success = True
 
 
         if abs(y_error) > tol or abs(z_error) > tol:
 
+            # still aiming
             success = False
 
             # get state feedback
@@ -576,11 +538,19 @@ class LeftArm(object):
 
 
             # plan and move
-            plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
+            #plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
             # execute path
-            self.left_group.execute(plan, wait=True)
-            self.left_group.stop()
-            self.left_group.clear_pose_targets()
+            #self.left_group.execute(plan, wait=True)
+
+            try:
+                self.left_group.set_pose_target(pose_goal)
+                self.left_group.go(wait=True)
+                self.left_group.stop()
+                self.left_group.clear_pose_targets()
+
+            except (rospy.ServiceException, rospy.ROSException), e:
+                rospy.loginfo("Service call failed: %s" % (e,))
+
 
             rospy.sleep(0.5)
 
@@ -597,28 +567,6 @@ def main():
 
     try:
         left_arm = LeftArm()
-
-        #left_arm.aim()
-        #print("============ Press `Enter` to execute a movement using a pose goal")
-        # raw_input()
-        # #left_arm.go_to_goal()
-        # msg = geometry_msgs.msg.Pose()
-        # msg.orientation.x = 0.027
-        # msg.orientation.y = 0.76
-        # msg.orientation.z = -0.020
-        # msg.orientation.w = 0.65
-        #
-        # msg.position.x = 0.5
-        # msg.position.y = 0
-        # msg.position.z = 0
-        #
-        # #left_arm.go_to_goal_waypoints(msg)
-        # left_arm.pick_up_gun(msg)
-        # #print("============ Press `Enter` to close left gripper")
-        #raw_input()
-        #left_arm.left_gripper.close()
-
-
     except rospy.ROSInterruptException:
         return
     except KeyboardInterrupt:
