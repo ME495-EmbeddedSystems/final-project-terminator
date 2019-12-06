@@ -80,7 +80,6 @@ class AimTarget(object):
 		'''
 	def aim_goal(self,msg):
 
-		'''
 		These code are for aiming the target cup
 		
 		# frame center in pixel coordinates
@@ -197,23 +196,23 @@ class AimTarget(object):
 			pass
 
 
-	'''
+	
 
 
 		""" moves baxter's left hand to a pose goal """	
-		aim_goal = geometry_msgs.msg.Pose()
+		# aim_goal = geometry_msgs.msg.Pose()
 
-		# try to set the orientation constant:
+		# # try to set the orientation constant:
 
-		q = quaternion_from_euler(3.14, 1.5707, 3.14)
-		aim_goal.orientation.x = q[0]
-		aim_goal.orientation.y = q[1]
-		aim_goal.orientation.z = q[2]
-		aim_goal.orientation.w = q[3]	
+		# q = quaternion_from_euler(3.14, 1.5707, 3.14)
+		# aim_goal.orientation.x = q[0]
+		# aim_goal.orientation.y = q[1]
+		# aim_goal.orientation.z = q[2]
+		# aim_goal.orientation.w = q[3]	
 	
-		aim_goal.position.x = 0.832159
-		aim_goal.position.y = 0.531532
-		aim_goal.position.z = -0.10953
+		# aim_goal.position.x = 0.832159
+		# aim_goal.position.y = 0.531532
+		# aim_goal.position.z = -0.10953
 	
         ###########
 		
@@ -241,7 +240,7 @@ class AimTarget(object):
 		# aim_goal.position.z = -0.15
 
 		self.aim_group.set_pose_target(aim_goal)
-		# self.aim_group.set_start_state_to_current_state()        
+		self.aim_group.set_start_state_to_current_state()        
 		# plan to path goal
 
 		plan = self.aim_group.plan()
