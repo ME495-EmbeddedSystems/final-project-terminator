@@ -73,10 +73,6 @@ class LeftArm(object):
         self.robot = moveit_commander.RobotCommander()
         self.scene = moveit_commander.PlanningSceneInterface()
 
-        # size of April tag
-        # important for placement of gripper
-        self.tag = 0.0873125
-
 
         self.left_group = moveit_commander.MoveGroupCommander("left_arm")
 
@@ -105,6 +101,10 @@ class LeftArm(object):
         self.orientation_z = -0.0048
         self.orientation_w = 0.717
 
+        # size of April tag
+        # important for placement of gripper
+        self.tag = 0.07782
+        self.camera_offset = 0.0125
 
         # Amount to pull back pre and post grip (approach, retreat)
         self.prestandoff = 0.15
@@ -114,7 +114,7 @@ class LeftArm(object):
 
         # position adjustment parameters
         self.x_coord = 0.127
-        self.y_coord = 0.0762 + 0.0762
+        self.y_coord = 0.05
         self.z_coord = 0.0254
 
         # trajectory in RVIZ
@@ -357,8 +357,8 @@ class LeftArm(object):
             # pose_goal.position.z = msg.position.z + left_EE_pose.position.z + self.tag/2
 
             pose_goal.position.x = trans[0] - self.prestandoff
-            pose_goal.position.y = trans[1] + self.tag/2 + self.y_coord
-            pose_goal.position.z = trans[2] + self.tag/2 + self.vert_tg
+            pose_goal.position.y = trans[1] + self.tag/2 + self.camera_offset + self.y_coord
+            pose_goal.position.z = trans[2] + self.tag/2 #+ self.vert_tg
 
 
         elif post_standoff:
@@ -400,7 +400,7 @@ class LeftArm(object):
         left_EE_pose = self.left_group.get_current_pose().pose
 
         # check if orientation and position of goal are met
-        return made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol):
+        return made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol)
 
 
 
