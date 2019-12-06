@@ -39,30 +39,31 @@ class FinalPose(object):
 
 		self.left_group = moveit_commander.MoveGroupCommander('left_arm')
 		self.right_group = moveit_commander.MoveGroupCommander("right_arm")
-		# setting parameters
+		# setting parameters for left arm group
 		self.position_tolerance = 0.05
 		self.orientation_tolerance = 0.3
 		self.left_group.set_goal_position_tolerance(self.position_tolerance)
 		self.left_group.set_goal_orientation_tolerance(self.orientation_tolerance)
 		self.left_group.set_planning_time(10.0)
-        self.left_group.allow_replanning(True)
-        self.left_group.set_max_velocity_scaling_factor(0.2)
-        self.left_group.set_max_acceleration_scaling_factor(0.1)
-
+		self.left_group.allow_replanning(True)
+		self.left_group.set_max_velocity_scaling_factor(0.2)
+		self.left_group.set_max_acceleration_scaling_factor(0.1)
+		#set parameters for right arm group
 		self.right_group.set_goal_position_tolerance(self.position_tolerance)
 		self.right_group.set_goal_orientation_tolerance(self.orientation_tolerance)
 		self.right_group.set_planning_time(10.0)
-        self.right_group.allow_replanning(True)
-        self.right_group.set_max_velocity_scaling_factor(0.2)
-        self.right_group.set_max_acceleration_scaling_factor(0.1)
-
-        self.display_trajectory_publisher = rospy.Publisher(
-            '/move_group/display_planned_path',
-            moveit_msgs.msg.DisplayTrajectory,
-            queue_size=20)
+		self.right_group.allow_replanning(True)
+		self.right_group.set_max_velocity_scaling_factor(0.2)
+		self.right_group.set_max_acceleration_scaling_factor(0.1)
+		#trajectory in RVIZ
+		self.display_trajectory_publisher = rospy.Publisher(
+			'/move_group/display_planned_path',
+			moveit_msgs.msg.DisplayTrajectory,
+			queue_size=20)
 
 
 	def move2final(self):
+
 		curr_left_pose = self.left_group.get_current_pose().pose 
 		curr_right_pose = self.right_group.get_current_pose().pose 
 
@@ -70,17 +71,14 @@ class FinalPose(object):
 		right_pose_goal = geometry_msgs.msg.Pose()
 
 
-		left_pose_goal.orientation.x = -0.579534
-		left_pose_goal.orientation.y = 0.646759
-		left_pose_goal.orientation.z = -0.330412
-		left_pose_goal.orientation.w = -0.369691
+		# left_pose_goal.orientation.x = -0.532612
+		# left_pose_goal.orientation.y = 0.629328
+		# left_pose_goal.orientation.z = -0.369299
+		# left_pose_goal.orientation.w = -0.428824
 
-		left_pose_goal.position.x = 0.560992
-		left_pose_goal.position.y = -0.0221569
-		left_pose_goal.position.z = 0.107392
-
-		print("============ Press `Enter` to move final configuration ============")
-		raw_input()
+		# left_pose_goal.position.x = 0.5595036
+		# left_pose_goal.position.y = 0.116759
+		# left_pose_goal.position.z = 0.150905
 
 
 		right_pose_goal.orientation.x = -0.275902
@@ -91,3 +89,108 @@ class FinalPose(object):
 		right_pose_goal.position.x = 0.122443
 		right_pose_goal.position.y = -0.695486
 		right_pose_goal.position.z = -0.40463
+
+		left_pose_goal.orientation.x = -0.140057
+		left_pose_goal.orientation.y = 0.988831
+		left_pose_goal.orientation.z = 0.0239579
+		left_pose_goal.orientation.w = 0.0449773
+
+		left_pose_goal.position.x = 0.288826
+		left_pose_goal.position.y = 0.834644
+		left_pose_goal.position.z = -0.298896
+
+
+		# right_pose_goal.orientation.x = 0.912343
+		# right_pose_goal.orientation.y = -0.349991
+		# right_pose_goal.orientation.z = -0.0176441
+		# right_pose_goal.orientation.w = 0.21172
+
+		# right_pose_goal.position.x = 0.247896
+		# right_pose_goal.position.y = -0.763482
+		# right_pose_goal.position.z = -0.439287
+
+		plan_left, fraction_left = plan_cartesian_path(curr_left_pose, left_pose_goal, self.left_group)
+
+		print("The fraction of left hand path covered")
+		print(fraction_left)
+
+		# display plan in rviz
+		display_trajectory(plan_left, self.robot, self.display_trajectory_publisher)
+
+		# rospy.sleep(2)
+
+
+		plan_right, fraction_right = plan_cartesian_path(curr_right_pose, right_pose_goal, self.right_group)
+
+		print("The fraction of right hand path covered")
+		print(fraction_right)
+
+		# display plan in rviz
+		display_trajectory(plan_right, self.robot, self.display_trajectory_publisher)
+
+		rospy.sleep(2)
+		# self.left_group.set_pose_target(left_pose_goal)
+		# self.left_group.set_start_state_to_current_state()        
+		# # plan to path goal
+
+		# plan_left = self.left_group.plan()
+		
+		# rospy.sleep(2)
+
+		# display_trajectory(plan_left, self.robot, self.display_trajectory_publisher)
+
+		# self.left_group.set_pose_target(left_pose_goal)
+		# self.left_group.set_start_state_to_current_state()        
+		# # plan to path goal
+
+		# plan_right = self.left_group.plan()
+		
+		# rospy.sleep(2)
+
+		# # display plan in rviz
+		# display_trajectory(plan_right, self.robot, self.display_trajectory_publisher)
+
+		print("============ Press `Enter` to move final configuration ============")
+		raw_input()
+
+		try:
+			# execute path
+			self.left_group.execute(plan_left, wait=True)
+			self.left_group.stop()
+			self.left_group.clear_pose_targets()
+
+			# wait for baxter to get to goal
+			rospy.sleep(2)
+
+			self.right_group.execute(plan_right, wait=True)
+			self.right_group.stop()
+			self.right_group.clear_pose_targets()
+
+			rospy.sleep(2)
+
+
+
+		except (rospy.ServiceException, rospy.ROSException), e:
+			rospy.loginfo("Service call failed: %s" % (e,))
+
+def main():
+
+	try:
+		final_pose = FinalPose()
+		action = raw_input("(R)each the final goal ?")
+		if (action == "R"):
+			final_pose.move2final()
+
+	except rospy.ROSInterruptException:
+		return
+	except KeyboardInterrupt:
+		return
+
+	rospy.spin()
+
+
+if __name__ == '__main__':
+	main()
+
+
+
