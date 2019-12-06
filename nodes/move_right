@@ -209,6 +209,29 @@ class RightArm(object):
         """
 
         # stage 1
+        standoff_pose = trigger_hand(standoff=True)
+
+        # stage 2
+        grasp_pose = trigger_hand(grasp=True)
+
+        if grasp_pose and standoff_pose
+            return True
+
+        return False
+
+
+    def trigger_hand(self, standoff=False, grasp=False):
+        """ places the right gripper at the trigger
+
+        Args:
+            standoff (bool): if true move to standoff location at gun
+            grasp (bool): if true place gripper on trigger
+
+        Return:
+            success (bool): true if ready to pull trigger
+        """
+
+        # stage 1
         print("============ Move to gun ============")
 
         right_EE_pose = self.right_group.get_current_pose().pose
@@ -250,92 +273,38 @@ class RightArm(object):
 
         pose_goal = geometry_msgs.msg.Pose()
 
-        pose_goal.position.x = trans[0]
-        pose_goal.position.y = trans[1]
-        pose_goal.position.z = trans[2]
+        if standoff:
+            print("=== Moveing to standoff location ===")
+            pose_goal.position.x = trans[0]
+            pose_goal.position.y = trans[1]
+            pose_goal.position.z = trans[2]
 
-        pose_goal.orientation.x = quat[0]
-        pose_goal.orientation.y = quat[1]
-        pose_goal.orientation.z = quat[2]
-        pose_goal.orientation.w = quat[3]
+            pose_goal.orientation.x = quat[0]
+            pose_goal.orientation.y = quat[1]
+            pose_goal.orientation.z = quat[2]
+            pose_goal.orientation.w = quat[3]
+
+        elif grasp:
+            print("=== Moveing to trigger ===")
+            pose_goal.position.x = right_EE_pose.position.x
+            pose_goal.position.y = right_EE_pose.position.y + self.d
+            pose_goal.position.z = right_EE_pose.position.z
+
+            pose_goal.orientation.x = right_EE_pose.orientation.x
+            pose_goal.orientation.y = right_EE_pose.orientation.y
+            pose_goal.orientation.z = right_EE_pose.orientation.z
+            pose_goal.orientation.w = right_EE_pose.orientation.w
 
 
-        # plan from right EE to goal
-        plan, fraction = plan_cartesian_path(right_EE_pose, pose_goal, self.right_group)
+        # attempt to move to goal
+        move_arm(right_EE_pose, pose_goal, self.right_group, self.robot, self.display_trajectory_publisher)
 
-        print("The fraction of path covered")
-        print(fraction)
-
-        # display plan in rviz
-        display_trajectory(plan, self.robot, self.display_trajectory_publisher)
-
+        # wait for baxter to get to goal
         rospy.sleep(2)
-
-
-        print("============ Press `Enter` to move gripper ============")
-        #raw_input()
-
-        try:
-            # execute path
-            self.right_group.execute(plan, wait=True)
-            self.right_group.stop()
-            self.right_group.clear_pose_targets()
-
-            # wait for baxter to get to goal
-            rospy.sleep(2)
-
-        except (rospy.ServiceException, rospy.ROSException), e:
-            rospy.loginfo("Service call failed: %s" % (e,))
-
-
-
-        # stage 2
-        print("============ Move to trigger ============")
-
         right_EE_pose = self.right_group.get_current_pose().pose
 
-        pose_goal.position.x = right_EE_pose.position.x
-        pose_goal.position.y = right_EE_pose.position.y + self.d
-        pose_goal.position.z = right_EE_pose.position.z
-
-        pose_goal.orientation.x = right_EE_pose.orientation.x
-        pose_goal.orientation.y = right_EE_pose.orientation.y
-        pose_goal.orientation.z = right_EE_pose.orientation.z
-        pose_goal.orientation.w = right_EE_pose.orientation.w
-
-
-        # plan from right EE to goal
-        plan, fraction = plan_cartesian_path(right_EE_pose, pose_goal, self.right_group)
-
-        print("The fraction of path covered")
-        print(fraction)
-
-        # display plan in rviz
-        display_trajectory(plan, self.robot, self.display_trajectory_publisher)
-
-        rospy.sleep(2)
-
-
-
-        print("============ Press `Enter` to move gripper ============")
-        #raw_input()
-
-        try:
-            # execute path
-            self.right_group.execute(plan, wait=True)
-            self.right_group.stop()
-            self.right_group.clear_pose_targets()
-
-            # wait for baxter to get to goal
-            rospy.sleep(2)
-
-        except (rospy.ServiceException, rospy.ROSException), e:
-            rospy.loginfo("Service call failed: %s" % (e,))
-
-
-
-        return True
-
+        # only check position of goal
+        return made_it_position(pose_goal, right_EE_pose, self.position_tol)
 
 
 
