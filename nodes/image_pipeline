@@ -153,8 +153,8 @@ class imageProcessor:
     # A rospy timer publishes this information
     def publishOurCalibration(self):
 
-        # self.publishOurCalibration.publish(self.calibrationInfo)
-        pass
+        self.publishOurCalibration.publish(self.calibrationInfo)
+        
 
     # Constructor method
     def __init__(self):
