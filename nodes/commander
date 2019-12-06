@@ -82,7 +82,14 @@ def main():
             aimclient.stop_tracking_goal()
             aimclient.cancel_all_goals()
 
+    #if True:
+        #if True:
+
             print("canceled aiming")
+
+
+            triggerclient.wait_for_server()
+
 
             triggergoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
             triggerclient.send_goal(triggergoal)
