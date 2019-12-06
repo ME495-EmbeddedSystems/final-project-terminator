@@ -1,0 +1,19 @@
+<launch>
+
+  <node name="left_arm" pkg="terminator" type="move_left" output="screen"/>
+  <node name="right_arm" pkg="terminator" type="move_right" output="screen"/>
+
+<!--
+  <node name="calibrate_left" pkg="baxter_tools" type="calibrate_arm.py">
+    <arg name="limb" value="left"/>
+  </node>
+
+  <node name="calibrate_right" pkg="baxter_tools" type="calibrate_arm.py">
+    <arg name="limb" value="right"/>
+  </node>
+-->
+<!--
+  <node name="aim_robot_client" pkg="terminator" type="ArmRobotClient" output="screen"/>
+  <node name="aim_gun_server" pkg="terminator" type="ArmRobotServer" output="screen"/>
+-->
+</launch>

@@ -69,7 +69,7 @@ install(PROGRAMS
    nodes/commander
    nodes/move_left_actiontest
    nodes/move_right_actiontest
-   
+
    #src/terminator/gripper.py
 
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

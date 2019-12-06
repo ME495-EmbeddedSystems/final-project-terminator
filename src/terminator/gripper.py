@@ -25,7 +25,7 @@ from tf.transformations import euler_from_matrix
 
 
 def made_it(goal, actual, position_tol, orientation_tol):
-    """ Test if end effector made it to target
+    """ Test if end effector made it to target pose
 
     Args:
     goal (Pose): target for robot
@@ -54,9 +54,44 @@ def made_it(goal, actual, position_tol, orientation_tol):
             orient_goal = False
 
     if pos_goal and orient_goal:
+        print("Goal Reached")
         return True
 
+    print("Goal Not Reached!")
     return False
+
+
+def made_it_position(goal, actual, position_tol):
+    """ Test if end effector made it to target position
+
+    Args:
+    goal (Pose): target for robot
+    actual (Pose): where robot actually is
+    position_tol (float): tolerance for position of EE
+
+    Returns:
+    bool: True for success
+    """
+
+    goal = pose_to_list(goal)
+    actual = pose_to_list(actual)
+
+    pos_goal = True
+
+    # check if final position is within tolerance
+    for index in range(3):
+        if abs(actual[index] - goal[index]) > position_tol:
+            pos_goal = False
+
+    if pos_goal:
+        print("Goal Reached")
+        return True
+
+    print("Goal Not Reached!")
+    return False
+
+
+
 
 
 
@@ -127,16 +162,18 @@ def extract_pose(T):
 
 
 def plan_cartesian_path(EE_pose, goal, move_group):
-    """ plans a cartesian path using waypoints
+    """ plans a cartesian path using waypoints and allows for re-plannig attempts
 
     Args:
         EE_pose (Pose): pose of the end effector
         goal (Pose): pose of the goal configuration
         move_group: move group commander
+        plan_success (bool): if successfully can cover 80% of the desired path
     """
 
     print("Terminator Planning Trajectory")
 
+    plan_attempts = 3
     iter = 20
     waypoints = []
 
@@ -163,12 +200,76 @@ def plan_cartesian_path(EE_pose, goal, move_group):
     #self.left_group.set_max_velocity_scaling_factor(0.1)
     #self.left_group.set_max_acceleration_scaling_factor(0.1)
 
-    plan, fraction = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+    plan_success = True
+    fraction = 0.0
+    ctr = 0
+
+    while fraction < 0.9:
+        plan, fraction = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+
+        if ctr == plan_attempts:
+            plan_success = False
+            break
 
     #self.left_group.set_max_velocity_scaling_factor(0.6)
     #self.left_group.set_max_acceleration_scaling_factor(0.6)
 
-    return plan, fraction
+    return plan, fraction, plan_success
+
+
+def move_arm(EE_pose, pose_goal, move_group, robot, display_trajectory_publisher):
+    """ Attempts to move the arm in a cartesian path using waypoints if the plan
+    to follow tha path fails a target pose goal will be set and the path planning
+    component is aborted.
+
+    Args:
+        EE_pose (Pose): pose of the end effector
+        goal (Pose): pose of the goal configuration
+        move_group: move group commander
+        robot: moveit robot commander
+        display_trajectory_publisher: rviz publisher
+    """
+
+    plan, fraction, plan_success = plan_cartesian_path(EE_pose, pose_goal, move_group)
+
+    print("The fraction of path covered")
+    print(fraction)
+
+    if plan_success:
+        # display plan in rviz
+        display_trajectory(plan, robot, display_trajectory_publisher)
+        rospy.sleep(2)
+
+        print("============ Press `Enter` to move gripper ============")
+        raw_input()
+
+        try:
+            # execute path
+            move_group.execute(plan, wait=True)
+            move_group.stop()
+            move_group.clear_pose_targets()
+
+            # wait for baxter to get to goal
+            rospy.sleep(2)
+
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.loginfo("Service call failed: %s" % (e,))
+
+    else:
+        print("============ Press `Enter` to move gripper ============")
+        raw_input()
+
+        try:
+            move_group.set_pose_target(pose_goal)
+            move_group.go(wait=True)
+            move_group.stop()
+            move_group.clear_pose_targets()
+
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.loginfo("Service call failed: %s" % (e,))
+
+
+
 
 
 def arm_init_pose(init_goal, move_group, position_tol, orientation_tol, arm):
@@ -187,16 +288,31 @@ def arm_init_pose(init_goal, move_group, position_tol, orientation_tol, arm):
 
     EE_pose = move_group.get_current_pose().pose
 
-    plan, fraction = plan_cartesian_path(EE_pose, init_goal, move_group)
+    plan, fraction, plan_success = plan_cartesian_path(EE_pose, init_goal, move_group)
     print("Fraction of path covered to initial position")
     print(fraction)
 
-    # execute path
-    move_group.execute(plan, wait=True)
-    move_group.stop()
-    move_group.clear_pose_targets()
+    if plan_success:
+        # execute path
+        try:
+            move_group.execute(plan, wait=True)
+            move_group.stop()
+            move_group.clear_pose_targets()
 
-    rospy.sleep(4)
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.loginfo("Service call failed: %s" % (e,))
+
+    else:
+        try:
+            move_group.set_pose_target(init_goal)
+            move_group.go(wait=True)
+            move_group.stop()
+            move_group.clear_pose_targets()
+
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.loginfo("Service call failed: %s" % (e,))
+
+    rospy.sleep(2)
 
     EE_pose = move_group.get_current_pose().pose
     if made_it(init_goal, EE_pose, position_tol, orientation_tol):
@@ -204,7 +320,6 @@ def arm_init_pose(init_goal, move_group, position_tol, orientation_tol, arm):
 
     else:
         print(arm + "arm is Not in initial position")
-
 
 
 
