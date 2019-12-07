@@ -165,7 +165,7 @@ class imageProcessor:
 
         # self.calibrationMatrixLeftSub = rospy.Subscriber("/custom_calibration", CameraInfo, self.publish_left_calibration)
 
-        self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info", CameraInfo, self.publish_left_calibration)
+        self.calibrationMatrixLeftSub = rospy.Subscriber("/custom_calibration", CameraInfo, self.publish_left_calibration)
         self.calibrationMatrixLeftPub =  rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
 
         self.redistributeCameraInfo = rospy.Publisher("/camera_info", CameraInfo, queue_size = 1)
