@@ -14,6 +14,12 @@ from moveit_commander.conversions import pose_to_list
 from tf.transformations import quaternion_from_euler
 from terminator import *
 
+import roslib
+import actionlib
+roslib.load_manifest('terminator')
+import terminator.msg
+
+
 class FinalPose(object):
 	""" manipulates baxters left arm """
 
@@ -25,12 +31,12 @@ class FinalPose(object):
 		# First initialize moveit_commander and a rospy node:
 		moveit_commander.roscpp_initialize(sys.argv)
 		rospy.init_node("final_pose", anonymous=True)
-		# Instantiate a RobotCommander object. 
+		# Instantiate a RobotCommander object.
 		joint_state_topic = ['joint_states:=/robot/joint_states']
 		moveit_commander.roscpp_initialize(joint_state_topic)
 		# self.add_box()
 		self.robot = moveit_commander.RobotCommander()
-		# Instantiate a PlanningSceneInterface object. 
+		# Instantiate a PlanningSceneInterface object.
 		self.scene = moveit_commander.PlanningSceneInterface()
 		# Instantiate a MoveGroupCommander object. This object is an interface to a planning group
 		baxter_interface.RobotEnable().enable()
@@ -55,17 +61,47 @@ class FinalPose(object):
 		self.right_group.allow_replanning(True)
 		self.right_group.set_max_velocity_scaling_factor(0.2)
 		self.right_group.set_max_acceleration_scaling_factor(0.1)
+
 		#trajectory in RVIZ
-		self.display_trajectory_publisher = rospy.Publisher(
-			'/move_group/display_planned_path',
-			moveit_msgs.msg.DisplayTrajectory,
-			queue_size=20)
+		self.display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path'
+				,moveit_msgs.msg.DisplayTrajectory,queue_size=20)
+		self._feedback = terminator.msg.CommandsFeedback()
+		self._result = terminator.msg.CommandsResult()
+
+		self._as = actionlib.SimpleActionServer("finalcommander", terminator.msg.CommandsAction, execute_cb=self.execute_cb, auto_start = False)
+		self._as.start()
+		print("final pose started")
+
+
+	def execute_cb(self, goal):
+        print("in final pose cb")
+        # helper variables
+        r = rospy.Rate(1)
+        success = True
+
+        if goal.actionname == "finalpose":
+            if self._as.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % 'final pose')
+                self._as.set_preempted()
+                success = False
+            success = self.move2final()
+        else:
+            print(":( - don't get final pose")
+            success = False
+
+        if success:
+            self._result.completion = True
+            rospy.loginfo('%s: Succeeded' % 'final pose')
+            self._as.set_succeeded(self._result)
+        else:
+            self._result.completion = False
+            self._as.set_succeeded(self._result)
 
 
 	def move2final(self):
 
-		curr_left_pose = self.left_group.get_current_pose().pose 
-		curr_right_pose = self.right_group.get_current_pose().pose 
+		curr_left_pose = self.left_group.get_current_pose().pose
+		curr_right_pose = self.right_group.get_current_pose().pose
 
 		left_pose_goal = geometry_msgs.msg.Pose()
 		right_pose_goal = geometry_msgs.msg.Pose()
@@ -130,21 +166,21 @@ class FinalPose(object):
 
 		rospy.sleep(2)
 		# self.left_group.set_pose_target(left_pose_goal)
-		# self.left_group.set_start_state_to_current_state()        
+		# self.left_group.set_start_state_to_current_state()
 		# # plan to path goal
 
 		# plan_left = self.left_group.plan()
-		
+
 		# rospy.sleep(2)
 
 		# display_trajectory(plan_left, self.robot, self.display_trajectory_publisher)
 
 		# self.left_group.set_pose_target(left_pose_goal)
-		# self.left_group.set_start_state_to_current_state()        
+		# self.left_group.set_start_state_to_current_state()
 		# # plan to path goal
 
 		# plan_right = self.left_group.plan()
-		
+
 		# rospy.sleep(2)
 
 		# # display plan in rviz
@@ -169,17 +205,15 @@ class FinalPose(object):
 			rospy.sleep(2)
 
 
-
+			return True
 		except (rospy.ServiceException, rospy.ROSException), e:
 			rospy.loginfo("Service call failed: %s" % (e,))
+			return False
 
 def main():
 
 	try:
 		final_pose = FinalPose()
-		action = raw_input("(R)each the final goal ?")
-		if (action == "R"):
-			final_pose.move2final()
 
 	except rospy.ROSInterruptException:
 		return
@@ -191,6 +225,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
-
-
