@@ -148,8 +148,13 @@ class imageProcessor:
     def image_size(self, data):
         print("Height", data.height)
         print("Width", data.width)
+    
 
+    # A rospy timer publishes this information
+    def publishOurCalibration(self):
 
+        self.publishOurCalibration.publish(self.calibrationInfo)
+        
 
     # Constructor method
     def __init__(self):
@@ -158,7 +163,7 @@ class imageProcessor:
         # self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_image)
         # self.headCamera = rospy.Subscriber("/cameras/head_camera/image", Image, self.process_image)
 
-        self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info_std", CameraInfo, self.publish_left_calibration)
+        self.calibrationMatrixLeftSub = rospy.Subscriber("/custom_calibration", CameraInfo, self.publish_left_calibration)
         self.calibrationMatrixLeftPub =  rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
 
         self.redistributeCameraInfo = rospy.Publisher("/camera_info", CameraInfo, queue_size = 1)
@@ -172,13 +177,14 @@ class imageProcessor:
         self.rectifiedDistributor = rospy.Subscriber( "/image_rect", Image, self.distributeRectified )
         self.publishRectified = rospy.Publisher( "/camera_rect/image_rect", Image, queue_size = 1   )
 
-        # /camera_rect/image_rect
-
-
+        
+        self.publishOurCalibration = rospy.Publisher( "/custom_calibration", CameraInfo, queue_size = 1   )
+        
         ##########
         self.image_Sub = rospy.Subscriber("/darknet_ros/detection_image", Image, self.image_size)
         #########
 
+        self.timer = None
 
         # Subscribe to YOLO ROS's description of where the objects are
         self.result_image = rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.process_final_image)
@@ -190,6 +196,25 @@ class imageProcessor:
         self.apriltags = rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.apriltag_callback)
         self.desiredGunPose = rospy.Publisher("/gun_pose", Pose, queue_size = 1 )
 
+
+        # Construct our calibration matrix
+        self.calibrationInfo = CameraInfo()
+        
+        # How to set this?
+        # self.calibrationInfo.header 
+                    
+        self.height = 800.0
+        self.width = 1280.0
+        self.distortion_model = "plumb_bob"
+        # The distortion parameters, size depending on the distortion model.
+        # For "plumb_bob", the 5 parameters are: (k1, k2, t1, t2, k3).
+        self.D = [ -0.032957, -0.003448, 0.000304, 0.000864, 0.000000 ]
+        # Calibration matrix 
+        self.K = [ 406.348604, 0.000000, 655.698671, 0.000000, 406.130169, 426.434214, 0.000000, 0.000000, 1.000000 ] 
+        self.R = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        
+
+
 # Main Function
 if __name__ == "__main__":
 
@@ -197,6 +222,11 @@ if __name__ == "__main__":
 
     # create object
     my_imageProcessor = imageProcessor()
+    
+    # Use a timer to publish our calibration matrix every 0.3 seconds
+    while (True):
+        my_imageProcessor.publishOurCalibration.publish(my_imageProcessor.calibrationInfo  )
+        
 
     # Keep the thread alive by spinning
     rospy.spin()
