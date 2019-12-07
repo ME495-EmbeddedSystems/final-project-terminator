@@ -34,6 +34,7 @@ def main():
     aimclient = actionlib.SimpleActionClient('aimcommander', terminator.msg.CommandsAction)
     triggerclient = actionlib.SimpleActionClient('triggercommander', terminator.msg.CommandsAction)
     fireclient = actionlib.SimpleActionClient('firecommander', terminator.msg.CommandsAction)
+    finalclient = actionlib.SimpleActionClient('finalcommander', terminator.msg.CommandsAction)
 
     print("next")
     pickgunclient.wait_for_server()
@@ -66,7 +67,7 @@ def main():
         aimclient.wait_for_result()
         aimed = aimclient.get_result()
 
-        print(aimed.completion)
+        print(aimed.completion)print("yay - fired!!!")
 
         while aimed.completion != True:
             aimclient.send_goal(aimgoal)
@@ -124,6 +125,21 @@ def main():
                         if fired.completion == True:
                             print("Baxter has successfully shot (or attempted to)")
                             pulled = True
+
+                            time.sleep(5)
+
+                            fireclient.stop_tracking_goal()
+                            fireclient.cancel_all_goals()
+
+                            print("canceled fire")
+
+                            finalgoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
+                            finalclient.send_goal(finalgoal)
+                            finalclient.wait_for_result()
+                            finalpose = finalclient.get_result()
+
+                            print(finalpose.completion)
+
                     else:
                         print("Please select another option")
 

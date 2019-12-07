@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+"""
+
+PUBLSIHERS:
+    +
+
+SUBSCRIBERS:
+    +
+"""
+
+from __future__ import division
+
+import sys
+import copy
+import rospy
+import roslib
+
+import actionlib
+roslib.load_manifest('terminator')
+import terminator.msg
+
+
+
+class FinalPose(object):
+    # create messages that are used to publish feedback/result
+    _feedback = terminator.msg.CommandsFeedback()
+    _result = terminator.msg.CommandsResult()
+
+
+    def __init__(self):
+        print("init")
+        self._as = actionlib.SimpleActionServer("commander", terminator.msg.CommandsAction, execute_cb=self.execute_cb, auto_start = False)
+
+        self._as.start()
+        print("final pose started")
+
+
+    def execute_cb(self, goal):
+        print("in final pose cb")
+        # helper variables
+        r = rospy.Rate(1)
+        success = True
+
+        if goal.finalaction == "finalpose":
+            if self._as.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % 'final pose')
+                self._as.set_preempted()
+                success = False
+            print("yay - got final pose")
+
+            if success:
+                self._result.completion = True
+                rospy.loginfo('%s: Succeeded' % 'final pose')
+                self._as.set_succeeded(self._result)
+            else:
+                self._result.completion = False
+                self._as.set_succeeded(self._result)
+
+        else:
+            print(":( - don't get final pose")
+            success = False
+
+if __name__ == '__main__':
+    rospy.init_node('final_pose')
+    server = FinalPose()
+    rospy.spin()
+
+
+
+
+
+
+
+
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#

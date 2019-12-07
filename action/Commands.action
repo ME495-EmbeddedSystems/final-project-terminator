@@ -1,5 +1,9 @@
 # goal sent to client
-string actionname #which action baxter needs to do
+string gunaction #which action baxter needs to do
+string aimaction
+string triggeraction
+string fireaction
+string finalaction
 ---
 # result sent to server
 bool completion #did the action complete successfully
