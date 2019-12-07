@@ -142,6 +142,7 @@ def main():
 
                             finalclient.stop_tracking_goal()
                             finalclient.cancel_all_goals()
+                            print("shooting complete")
 
                     else:
                         print("Please select another option")

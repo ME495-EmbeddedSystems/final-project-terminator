@@ -86,7 +86,7 @@ class FinalPose(object):
                 success = False
             success = self.move2final()
         else:
-            print(":( - don't get final pose")
+            print(":( - didn't get final pose")
             success = False
 
         if success:
