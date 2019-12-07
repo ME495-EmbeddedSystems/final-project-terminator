@@ -174,7 +174,7 @@ def plan_cartesian_path(EE_pose, goal, move_group):
     print("Terminator Planning Trajectory")
 
     plan_attempts = 3
-    iter = 20
+    iter = 2
     waypoints = []
 
     xiter = np.linspace(EE_pose.position.x, goal.position.x, iter)
@@ -202,14 +202,18 @@ def plan_cartesian_path(EE_pose, goal, move_group):
 
     plan_success = True
     fraction = 0.0
+    #plan, fraction = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+
     ctr = 0
 
-    while fraction < 0.9:
+    while fraction < 0.8:
         plan, fraction = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
 
         if ctr == plan_attempts:
             plan_success = False
             break
+
+        ctr += 1
 
     #self.left_group.set_max_velocity_scaling_factor(0.6)
     #self.left_group.set_max_acceleration_scaling_factor(0.6)
@@ -237,6 +241,7 @@ def move_arm(EE_pose, pose_goal, move_group, robot, display_trajectory_publisher
 
     if plan_success:
         # display plan in rviz
+        print("Using cartesian path")
         display_trajectory(plan, robot, display_trajectory_publisher)
         rospy.sleep(2)
 
@@ -256,12 +261,13 @@ def move_arm(EE_pose, pose_goal, move_group, robot, display_trajectory_publisher
             rospy.loginfo("Service call failed: %s" % (e,))
 
     else:
+        print("Using pose goal")
         print("============ Press `Enter` to move gripper ============")
         raw_input()
 
         try:
             move_group.set_pose_target(pose_goal)
-            move_group.go(wait=True)
+            plan = move_group.go(wait=True)
             move_group.stop()
             move_group.clear_pose_targets()
 
