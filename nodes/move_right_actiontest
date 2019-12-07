@@ -64,6 +64,8 @@ class RightArm(object):
             self._astrig.set_succeeded(self._triggerresult)
         else:
             self._triggerresult.completion = False
+            self._astrig.set_succeeded(self._triggerresult)
+
 
     def fireexecute_cb(self, goal):
         print("in trigger cb")
@@ -87,6 +89,7 @@ class RightArm(object):
             self._asfire.set_succeeded(self._fireresult)
         else:
             self._fireresult.completion = False
+            self._asfire.set_succeeded(self._fireresult)
 
 
 if __name__ == '__main__':

@@ -70,6 +70,12 @@ install(PROGRAMS
    nodes/move_left_actiontest
    nodes/move_right_actiontest
 
+#   nodes/mastercommander
+   nodes/final_pose
+   nodes/finalpose_test
+#   nodes/lefttest2
+#   nodes/righttest2
+
    #src/terminator/gripper.py
 
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
