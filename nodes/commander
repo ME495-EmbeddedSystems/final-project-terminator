@@ -67,7 +67,7 @@ def main():
         aimclient.wait_for_result()
         aimed = aimclient.get_result()
 
-        print(aimed.completion)print("yay - fired!!!")
+        print(aimed.completion)
 
         while aimed.completion != True:
             aimclient.send_goal(aimgoal)
@@ -133,12 +133,15 @@ def main():
 
                             print("canceled fire")
 
-                            finalgoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
+                            finalgoal = terminator.msg.CommandsGoal(actionname='finalpose')
                             finalclient.send_goal(finalgoal)
                             finalclient.wait_for_result()
                             finalpose = finalclient.get_result()
 
                             print(finalpose.completion)
+
+                            finalclient.stop_tracking_goal()
+                            finalclient.cancel_all_goals()
 
                     else:
                         print("Please select another option")
