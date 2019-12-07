@@ -84,7 +84,7 @@ class LeftArm(object):
         self.left_group.set_goal_orientation_tolerance(self.orientation_tol)
         self.left_group.set_planning_time(10.0)
         self.left_group.allow_replanning(True)
-        self.left_group.set_max_velocity_scaling_factor(0.2)
+        self.left_group.set_max_velocity_scaling_factor(0.15)
         self.left_group.set_max_acceleration_scaling_factor(0.1)
 
         # gripper
@@ -110,12 +110,12 @@ class LeftArm(object):
         self.prestandoff = 0.15
         self.poststandoff = 0.2
         # vertical distance from gun to tag
-        self.vert_tg = 0.2413 - 0.0254/2
+        self.vert_tg = 0.225
 
         # position adjustment parameters
-        self.x_coord = 0.127
-        self.y_coord = 0.05
-        self.z_coord = 0.0254
+        self.x_coord = 0.12
+        self.y_coord = 0.245
+        self.z_coord = 0.01
 
         # trajectory in RVIZ
         self.display_trajectory_publisher = rospy.Publisher(
@@ -291,6 +291,7 @@ class LeftArm(object):
 
         # stage 1
         print("============ Move to gun ============")
+        rospy.sleep(2)
         pre_grasp = self.move_gripper(pose_tag, pre_standoff=True)
 
         # stage 2
@@ -332,6 +333,10 @@ class LeftArm(object):
             success (bool): True gripper makes it to pre-grasp standoff pose
         """
 
+
+
+
+
         # get pose of EE
         left_EE_pose = self.left_group.get_current_pose().pose
 
@@ -345,6 +350,10 @@ class LeftArm(object):
         # pose of gun relative to baxter
         quat, trans = extract_pose(Tbg)
 
+        print("pose of tag")
+        print(trans)
+        print(quat)
+
 
         # move EE right behind gun and stop
         pose_goal = geometry_msgs.msg.Pose()
@@ -357,8 +366,8 @@ class LeftArm(object):
             # pose_goal.position.z = msg.position.z + left_EE_pose.position.z + self.tag/2
 
             pose_goal.position.x = trans[0] - self.prestandoff
-            pose_goal.position.y = trans[1] + self.tag/2 + self.camera_offset + self.y_coord
-            pose_goal.position.z = trans[2] + self.tag/2 #+ self.vert_tg
+            pose_goal.position.y = trans[1] + self.y_coord    #+ self.tag + self.camera_offset + self.y_coord
+            pose_goal.position.z = trans[2] + self.vert_tg
 
 
         elif post_standoff:
@@ -374,7 +383,7 @@ class LeftArm(object):
             # move to grasp pose
             pose_goal.position.x = left_EE_pose.position.x + self.x_coord
             pose_goal.position.y = left_EE_pose.position.y
-            pose_goal.position.z = left_EE_pose.position.z + self.z_coord
+            pose_goal.position.z = left_EE_pose.position.z #- self.z_coord
 
 
         elif aiming:
@@ -393,11 +402,15 @@ class LeftArm(object):
         # attempt to move left arm to goal
         move_arm(left_EE_pose, pose_goal, self.left_group, self.robot, self.display_trajectory_publisher)
 
+
         # wait for baxter to get to goal
         rospy.sleep(2)
 
         # test if made it to pre-pick up position
         left_EE_pose = self.left_group.get_current_pose().pose
+
+        print("EE pose")
+        print(left_EE_pose)
 
         # check if orientation and position of goal are met
         return made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol)
@@ -538,18 +551,21 @@ class LeftArm(object):
 
 
             # plan and move
-            #plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
+            plan, fraction, plan_success = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
             # execute path
-            #self.left_group.execute(plan, wait=True)
+            self.left_group.execute(plan, wait=True)
+            self.left_group.stop()
+            self.left_group.clear_pose_targets()
 
-            try:
-                self.left_group.set_pose_target(pose_goal)
-                self.left_group.go(wait=True)
-                self.left_group.stop()
-                self.left_group.clear_pose_targets()
 
-            except (rospy.ServiceException, rospy.ROSException), e:
-                rospy.loginfo("Service call failed: %s" % (e,))
+            # try:
+            #     self.left_group.set_pose_target(pose_goal)
+            #     self.left_group.go(wait=True)
+            #     self.left_group.stop()
+            #     self.left_group.clear_pose_targets()
+            #
+            # except (rospy.ServiceException, rospy.ROSException), e:
+            #     rospy.loginfo("Service call failed: %s" % (e,))
 
 
             rospy.sleep(0.5)
