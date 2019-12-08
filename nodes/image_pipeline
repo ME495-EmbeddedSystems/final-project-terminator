@@ -41,6 +41,8 @@ from darknet_ros_msgs.msg import BoundingBoxes
 from apriltag_ros.msg import AprilTagDetectionArray
 from geometry_msgs.msg import Pose, Point
 
+from std_msgs.msg import String
+
 
 # This class implements the image processing pipeline
 # for our given task
