@@ -235,8 +235,8 @@ if __name__ == "__main__":
     my_imageProcessor = imageProcessor()
 
     # Use a timer to publish our calibration matrix every 0.3 seconds
-    #while (True):
-    #    my_imageProcessor.publishOurCalibration.publish(my_imageProcessor.calibrationInfo  )
+    while (True):
+        my_imageProcessor.publishOurCalibration.publish(my_imageProcessor.calibrationInfo  )
 
 
     # Keep the thread alive by spinning
