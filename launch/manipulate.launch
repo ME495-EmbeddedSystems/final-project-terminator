@@ -3,7 +3,7 @@
   <node name="left_arm" pkg="terminator" type="move_left" output="screen"/>
   <node name="right_arm" pkg="terminator" type="move_right" output="screen"/>
   <node name="final_pose" pkg="terminator" type="final_pose" output="screen"/>
-
+  <node name="commander" pkg="terminator" type="commander" output="screen"/>
 
 <!--
   <node name="calibrate_left" pkg="baxter_tools" type="calibrate_arm.py">
