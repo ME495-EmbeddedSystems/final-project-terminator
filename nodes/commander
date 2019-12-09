@@ -33,7 +33,7 @@ def enableBaxter():
 #    baxter_interface.RobotEnable().enable()
 #    rospy.sleep(0.25)
     face = '/config/time_cop.jpg'
-
+    enableFace(face)
     # joint_state_topic = ['joint_states:=/robot/joint_states']
     # moveit_commander.roscpp_initialize(joint_state_topic)
     #
@@ -41,6 +41,18 @@ def enableBaxter():
     # calibrateGripper('right')
 
     print("Baxter is enabled")
+
+
+def enableFace(face):
+    """
+    COMMANDER
+    """
+    img = cv2.imread(face)
+    msg = cv_bridge.CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
+    pub = rospy.Publisher('/robot/xdisplay', Image, latch=True, queue_size=1)
+    pub.publish(msg)
+    # Sleep to allow for image to be published.
+    rospy.sleep(1)
 
 def calibrateGripper(side):
     """
@@ -189,6 +201,7 @@ def initPos():
 
     left.move_to_joint_positions(lcmd)
     right.move_to_joint_positions(rcmd)
+
 
 if __name__ == '__main__':
     try:
