@@ -118,7 +118,7 @@ class LeftArm(object):
         self.z_coord = 0.01
 
         self.dy = 0.01
-        self.dz = 0.025
+        self.dz = 0.005
 
         # trajectory in RVIZ
         self.display_trajectory_publisher = rospy.Publisher(
@@ -171,6 +171,8 @@ class LeftArm(object):
 
         self._asgun.start()
         self._asaim.start()
+
+
 
 
 
