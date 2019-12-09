@@ -190,6 +190,8 @@ def initPos():
     left.move_to_joint_positions(lcmd)
     right.move_to_joint_positions(rcmd)
 
+    print("Using Forward Kinematics To Initialize Pose")
+
 if __name__ == '__main__':
     try:
         rospy.init_node("commander_client_py")
