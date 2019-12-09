@@ -25,28 +25,43 @@ from std_msgs.msg import String
 
 class TalkerTestCase(unittest.TestCase):
 
-    talker_ok = False
+    # Booleans that record if we have any messages published
+    customCalibration = False
+    imageRaw = False
+    yolo_detection = False
 
-    def callback(self, data):
-        self.talker_ok = True
+    def call_custom_calibration(self, data):
+        self.customCalibration = True
+    
+    def call_image_raw(self, data):
+        self.imageRaw = True
+    
+    def call_yolo_detection(self, data):
+        self.yolo_detection = True
 
     def test_if_publishes(self):
 
         rospy.init_node('myTestingNode')
+ 
+        rospy.Subscriber('/custom_calibration', CameraInfo, self.call_custom_calibration )
+      
+        rospy.Subscriber('/image_raw', Image, self.call_image_raw  )
+        
+        rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.call_yolo_detection)
 
-        rospy.Subscriber('/custom_calibration', CameraInfo, self.callback)
-
+        # Let this node spin for a few seconds to allow 
+        # the messages some time to be published
         counter = 0
-
-        # while rospy.is_shutdown():
         while (counter < 5):
     
-            print("entered")
             counter = counter + 1
             sleep(1)
+            
 
+        self.assertTrue(self.customCalibration)
+        self.assertTrue(self.imageRaw)
+        self.assertTrue(self.yolo_detection)
 
-        self.assertTrue(self.talker_ok)
 
 
 if __name__ == '__main__':
