@@ -110,12 +110,15 @@ class LeftArm(object):
         self.prestandoff = 0.15
         self.poststandoff = 0.2
         # vertical distance from gun to tag
-        self.vert_tg = 0.225
+        self.vert_tg = 0.31
 
         # position adjustment parameters
-        self.x_coord = 0.12
-        self.y_coord = 0.245
+        self.x_coord = 0.135
+        self.y_coord = 0.17
         self.z_coord = 0.01
+
+        self.dy = 0.01
+        self.dz = 0.025
 
         # trajectory in RVIZ
         self.display_trajectory_publisher = rospy.Publisher(
@@ -132,7 +135,7 @@ class LeftArm(object):
         self.init_goal.orientation.w = 0.639
 
         self.init_goal.position.x = 0.415
-        self.init_goal.position.y = 0.531
+        self.init_goal.position.y = 0.6#0.531
         self.init_goal.position.z = -0.15
 
 
@@ -333,10 +336,6 @@ class LeftArm(object):
             success (bool): True gripper makes it to pre-grasp standoff pose
         """
 
-
-
-
-
         # get pose of EE
         left_EE_pose = self.left_group.get_current_pose().pose
 
@@ -382,8 +381,8 @@ class LeftArm(object):
             print("grasp")
             # move to grasp pose
             pose_goal.position.x = left_EE_pose.position.x + self.x_coord
-            pose_goal.position.y = left_EE_pose.position.y
-            pose_goal.position.z = left_EE_pose.position.z #- self.z_coord
+            pose_goal.position.y = left_EE_pose.position.y + self.dy
+            pose_goal.position.z = left_EE_pose.position.z + self.dz
 
 
         elif aiming:
@@ -392,8 +391,14 @@ class LeftArm(object):
             pose_goal.position.y = 0.30
             pose_goal.position.z = 0.20
 
+            # pose_goal.orientation.x = 0.03
+            # pose_goal.orientation.y = 0.85
+            # pose_goal.orientation.z = 0.004
+            # pose_goal.orientation.w = 0.53
 
-        # use pre-defined orientation
+
+        #if not aiming:
+            # use pre-defined orientation
         pose_goal.orientation.x = self.orientation_x
         pose_goal.orientation.y = self.orientation_y
         pose_goal.orientation.z = self.orientation_z
@@ -568,7 +573,7 @@ class LeftArm(object):
             #     rospy.loginfo("Service call failed: %s" % (e,))
 
 
-            rospy.sleep(0.5)
+            rospy.sleep(1)
 
 
         return success

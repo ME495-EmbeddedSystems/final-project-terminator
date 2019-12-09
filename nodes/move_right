@@ -91,11 +91,14 @@ class RightArm(object):
         self.right_gripper.open()
 
         # gripper position tuning parameters
-        self.d = 0.0762
+        self.d = 0.0762 + 0.045
 
         self.x_coord = 0.1016
         self.y_coord = 0.1143
         self.z_coord = 0.0508
+
+        self.dx2 = 0.04
+        self.dy2 = 0.05
 
 
         # trajectory in RVIZ
@@ -209,10 +212,10 @@ class RightArm(object):
         """
 
         # stage 1
-        standoff_pose = trigger_hand(standoff=True)
+        standoff_pose = self.trigger_hand(standoff=True)
 
         # stage 2
-        grasp_pose = trigger_hand(grasp=True)
+        grasp_pose = self.trigger_hand(grasp=True)
 
         if grasp_pose and standoff_pose:
             return True
@@ -275,8 +278,8 @@ class RightArm(object):
 
         if standoff:
             print("=== Moveing to standoff location ===")
-            pose_goal.position.x = trans[0]
-            pose_goal.position.y = trans[1]
+            pose_goal.position.x = trans[0] - self.dx2
+            pose_goal.position.y = trans[1] - self.dy2
             pose_goal.position.z = trans[2]
 
             pose_goal.orientation.x = quat[0]

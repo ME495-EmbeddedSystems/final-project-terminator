@@ -83,8 +83,8 @@ def main():
             aimclient.stop_tracking_goal()
             aimclient.cancel_all_goals()
 
-    #if True:
-        #if True:
+    # if True:
+    #     if True:
 
             print("canceled aiming")
 
@@ -123,6 +123,7 @@ def main():
                         fired = fireclient.get_result()
 
                         if fired.completion == True:
+                        #if True:
                             print("Baxter has successfully shot (or attempted to)")
                             pulled = True
 

@@ -1,0 +1,7 @@
+<launch>
+
+<node name="myTesting1" pkg="terminator" type="image_pipeline" />
+<test test-name="client" pkg="terminator" type="myTest.py" />
+
+
+</launch>

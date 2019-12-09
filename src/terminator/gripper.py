@@ -174,7 +174,7 @@ def plan_cartesian_path(EE_pose, goal, move_group):
     print("Terminator Planning Trajectory")
 
     plan_attempts = 3
-    iter = 2
+    iter = 10
     waypoints = []
 
     xiter = np.linspace(EE_pose.position.x, goal.position.x, iter)
