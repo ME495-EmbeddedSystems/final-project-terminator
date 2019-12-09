@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import rospy
+import roslib
 import baxter_interface
+roslib.load_manifest('terminator')
 
 class SafeArms(object):
 
