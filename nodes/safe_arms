@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+import rospy
+import baxter_interface
+
+class SafeArms(object):
+
+    def initPos():
+        # move both arms to a good position before the initial poses
+        left = baxter_interface.Limb('left')
+        right = baxter_interface.Limb('right')
+
+        lcmd ={'left_s0':0.764689422761,'left_s1':-0.143810698864,'left_e0':-0.190213617698,'left_e1':1.71345654007,'left_w0':1.52822835993,'left_w1':-1.4684031092,'left_w2':0.0383495196971} #,4.51127815247}
+        rcmd = {'right_s0':-0.353582571608,'right_s1':-0.676869022654,'right_e0':0.20133497841,'right_e1':1.70156818896,'right_w0':-2.16828184368,'right_w1':-1.5704128316,'right_w2':0.245820421259} #,95.4983901978}
+
+        left.move_to_joint_positions(lcmd)
+        right.move_to_joint_positions(rcmd)
+
+def main():
+    rospy.init_node("safe_arm", anonymous=True)
+
+    try:
+        safearm = SafeArms()
+    except rospy.ROSInterruptException:
+        return
+    except KeyboardInterrupt:
+        return
+
+
+if __name__ == '__main__':
+    main()
