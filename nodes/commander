@@ -37,78 +37,81 @@ def main():
     finalclient = actionlib.SimpleActionClient('finalcommander', terminator.msg.CommandsAction)
 
     print("next")
-    pickgunclient.wait_for_server()
+    #pickgunclient.wait_for_server()
+    finalclient.wait_for_server()
     print("received")
 
-    # Pick up the gun using the left hand
-    goal = terminator.msg.CommandsGoal(actionname="get_gun")
-    pickgunclient.send_goal(goal)
-    pickgunclient.wait_for_result()
-    gotgun = pickgunclient.get_result() #bool if baxter retrieved gun or not
+    if True:
 
-    print(pickgunclient.get_result())
-    # Move left hand to be in line with the target
-    if gotgun.completion == True:
-        print("Baxter is armed")
-        time.sleep(5)
+    # # Pick up the gun using the left hand
+    # goal = terminator.msg.CommandsGoal(actionname="get_gun")
+    # pickgunclient.send_goal(goal)
+    # pickgunclient.wait_for_result()
+    # gotgun = pickgunclient.get_result() #bool if baxter retrieved gun or not
 
-        pickgunclient.stop_tracking_goal()
-        pickgunclient.cancel_all_goals()
+    # print(pickgunclient.get_result())
+    # # Move left hand to be in line with the target
+    # if gotgun.completion == True:
+    #     print("Baxter is armed")
+    #     time.sleep(5)
 
-        print("canceled getting gun")
+    #     pickgunclient.stop_tracking_goal()
+    #     pickgunclient.cancel_all_goals()
 
-    #if True:
+    #     print("canceled getting gun")
 
-        aimgoal = terminator.msg.CommandsGoal(actionname='aim_gun')
+    # #if True:
 
-        #client.accept_new_goal()
+    #     aimgoal = terminator.msg.CommandsGoal(actionname='aim_gun')
 
-        aimclient.send_goal(aimgoal)
-        aimclient.wait_for_result()
-        aimed = aimclient.get_result()
+    #     #client.accept_new_goal()
 
-        print(aimed.completion)
+    #     aimclient.send_goal(aimgoal)
+    #     aimclient.wait_for_result()
+    #     aimed = aimclient.get_result()
 
-        while aimed.completion != True:
-            aimclient.send_goal(aimgoal)
-            aimclient.wait_for_result()
-            aimed = aimclient.get_result()
+    #     print(aimed.completion)
 
+    #     while aimed.completion != True:
+    #         aimclient.send_goal(aimgoal)
+    #         aimclient.wait_for_result()
+    #         aimed = aimclient.get_result()
 
+        if True: 
         # Right hand moves to the trigger
-        if aimed.completion == True:
-            print("Baxter has acquired target and is aiming")
-            time.sleep(5)
+    #     if aimed.completion == True:
+    #         print("Baxter has acquired target and is aiming")
+    #         time.sleep(5)
 
-            aimclient.stop_tracking_goal()
-            aimclient.cancel_all_goals()
+    #         aimclient.stop_tracking_goal()
+    #         aimclient.cancel_all_goals()
 
-    #if True:
-        #if True:
+    # #if True:
+    #     #if True:
 
-            print("canceled aiming")
-
-
-            triggerclient.wait_for_server()
+    #         print("canceled aiming")
 
 
-            triggergoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
-            triggerclient.send_goal(triggergoal)
-            triggerclient.wait_for_result()
-            ontrigger = triggerclient.get_result()
+    #         triggerclient.wait_for_server()
 
-            print(ontrigger.completion)
 
+    #         triggergoal = terminator.msg.CommandsGoal(actionname='moveto_trigger')
+    #         triggerclient.send_goal(triggergoal)
+    #         triggerclient.wait_for_result()
+    #         ontrigger = triggerclient.get_result()
+
+    #         print(ontrigger.completion)
+            if True:
             # User confirmation to fire
-            if ontrigger.completion == True:
-                print("Baxter awaiting command to fire")
+            # if ontrigger.completion == True:
+            #     print("Baxter awaiting command to fire")
 
-                time.sleep(5)
+            #     time.sleep(5)
 
-                triggerclient.stop_tracking_goal()
-                triggerclient.cancel_all_goals()
+            #     triggerclient.stop_tracking_goal()
+            #     triggerclient.cancel_all_goals()
 
-                print("canceled getting to trigger")
+            #     print("canceled getting to trigger")
 
 
 
@@ -117,19 +120,20 @@ def main():
                 while pulled != True:
                     user_input = raw_input("Permission to fire? Yes or No:   ")
                     if (user_input.lower() == "yes" or user_input.lower() == "y"):
-                        firegoal = terminator.msg.CommandsGoal(actionname='fire')
-                        fireclient.send_goal(firegoal)
-                        fireclient.wait_for_result()
-                        fired = fireclient.get_result()
+                        # firegoal = terminator.msg.CommandsGoal(actionname='fire')
+                        # fireclient.send_goal(firegoal)
+                        # fireclient.wait_for_result()
+                        # fired = fireclient.get_result()
+                        if True: 
 
-                        if fired.completion == True:
+                        #if fired.completion == True:
                             print("Baxter has successfully shot (or attempted to)")
                             pulled = True
 
                             time.sleep(5)
 
-                            fireclient.stop_tracking_goal()
-                            fireclient.cancel_all_goals()
+                            # fireclient.stop_tracking_goal()
+                            # fireclient.cancel_all_goals()
 
                             print("canceled fire")
 
