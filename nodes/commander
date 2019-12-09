@@ -83,8 +83,8 @@ def main():
             aimclient.stop_tracking_goal()
             aimclient.cancel_all_goals()
 
-    # if True:
-    #     if True:
+    #if True:
+         #if True:
 
             print("canceled aiming")
 
