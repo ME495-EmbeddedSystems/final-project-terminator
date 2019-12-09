@@ -5,7 +5,9 @@ import roslib
 import sys
 import time
 
+import baxter_interface
 import actionlib
+import moveit_commander
 
 roslib.load_manifest('terminator')
 
@@ -25,10 +27,34 @@ use action server
 def enableBaxter():
 #    baxter_interface.RobotEnable().enable()
 #    rospy.sleep(0.25)
+    face = '/config/time_cop.jpg'
+
+    # joint_state_topic = ['joint_states:=/robot/joint_states']
+    # moveit_commander.roscpp_initialize(joint_state_topic)
+    #
+    # calibrateGripper('left')
+    # calibrateGripper('right')
+
     print("Baxter is enabled")
 
+def calibrateGripper(side):
+    """
+    SCRIPT
+
+    Define gripper
+    Reboot gripper
+    Calibrate gripper
+    Open gripper
+    """
+
+    gripper = Gripper(side, CHECK_VERSION)
+    gripper.reboot()
+    gripper.calibrate()
+    gripper.open()
 
 def main():
+
+    # get baxter to move to a good initial pose for its arms
 
     pickgunclient = actionlib.SimpleActionClient('guncommander', terminator.msg.CommandsAction)
     aimclient = actionlib.SimpleActionClient('aimcommander', terminator.msg.CommandsAction)
@@ -148,12 +174,22 @@ def main():
                     else:
                         print("Please select another option")
 
+def initPos():
+    # move both arms to a good position before the initial poses
+    left = baxter_interface.Limb('left')
+    right = baxter_interface.Limb('right')
 
+    lcmd ={0.764689422761,-0.143810698864,-0.190213617698,1.71345654007,1.52822835993,-1.4684031092,0.0383495196971} #,4.51127815247}
+    rcmd = {-0.353582571608,-0.676869022654,0.20133497841,1.70156818896,-2.16828184368,-1.5704128316,0.245820421259} #,95.4983901978}
+
+    left.set_joint_positions(lcmd)
+    right.set_joint_positions(rcmd)
 
 if __name__ == '__main__':
     try:
         rospy.init_node("commander_client_py")
         enableBaxter()
+        initPos()
         main()
     except rospy.ROSInterruptException:
         print("program interrupted before baxter could shoot")
