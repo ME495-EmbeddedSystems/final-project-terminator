@@ -97,7 +97,7 @@ class RightArm(object):
         self.y_coord = 0.1143
         self.z_coord = 0.0508
 
-        self.dx2 = 0.04
+        self.dx2 = 0.01
         self.dy2 = 0.05
 
 
