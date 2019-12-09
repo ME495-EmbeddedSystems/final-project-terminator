@@ -13,7 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_python_setup()
 
 
-## Generate messages in the 'msg' folder
+if(CATKIN_ENABLE_TESTING)
+find_package(rostest REQUIRED)
+add_rostest(test/myTest.test)
+endif()
+
+
+# Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
 #   Message1.msg

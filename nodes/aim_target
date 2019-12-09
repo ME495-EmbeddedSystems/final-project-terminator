@@ -47,11 +47,11 @@ class AimTarget(object):
 		# self.aim_group.set_max_velocity_scaling_factor(0.6)
 		# self.aim_group.set_max_acceleration_scaling_factor(0.6)
 
-		'''
+		
 		# initialize error
 		self.y_err_i = 0
 		self.z_err_i = 0
-		# subscribe to /TargetBox
+		#subscribe to /TargetBox
 		self.target_pose = rospy.Subscriber('/targetBox', Point, self.aim_goal)
 		self.display_trajectory_publisher = rospy.Publisher(
 			'/move_group/display_planned_path',
@@ -77,15 +77,15 @@ class AimTarget(object):
 
 
 
-		'''
+		
 	def aim_goal(self,msg):
 
-		These code are for aiming the target cup
+		# These code are for aiming the target cup
 		
 		# frame center in pixel coordinates
-		# full image is 416 * 416
-		y_ref = 208
-		z_ref = 208
+		# full image is 640 * 400 ???
+		y_ref = 640/2
+		z_ref = 400/2
 		diff = 5
 		# center of the cup in pixel coordinates
 		y_target = msg.x
@@ -118,7 +118,7 @@ class AimTarget(object):
 			print("current_pose_z is :",current_pose.position.z)
 		
 			
-
+			aim_goal.position.x = current_pose.position.x
 			aim_goal.position.y = current_pose.position.y + KP_y*y_err + KI_y * (self.y_err_i + y_err * 0.005 )
 			self.y_err_i += y_err*0.005
 
@@ -163,29 +163,30 @@ class AimTarget(object):
 			# 		aim_goal.position.z = current_pose.position.z - dz
 
 
+			# self.aim_group.set_pose_target(aim_goal)
+			# self.aim_group.set_start_state_to_current_state()        
 
-
-			# plan to move
-			plan, fraction = plan_cartesian_path(current_pose, aim_goal, self.aim_group)
-			self.display_trajectory(plan, self.robot, self.display_trajectory_publisher)
-			# excute
-			confirmed = raw_input('Execute aim_target? y/n')
-			if confirmed == "y":
-				self.aim_group.execute(plan, wait=True)        
-				self.aim_group.stop()
-				self.aim_group.clear_pose_targets()
+			# # plan to move
+			# plan, fraction = plan_cartesian_path(current_pose, aim_goal, self.aim_group)
+			# self.display_trajectory(plan, self.robot, self.display_trajectory_publisher)
+			# # excute
+			# confirmed = raw_input('Execute aim_target? y/n')
+			# if confirmed == "y":
+			# 	self.aim_group.execute(plan, wait=True)        
+			# 	self.aim_group.stop()
+			# 	self.aim_group.clear_pose_targets()
 
 			
-			print("current_pose is:")
-			print(current_pose)
-			print("the goal pose is :")
-			print(aim_goal)
+			# print("current_pose is:")
+			# print(current_pose) 
+			# print("the goal pose is :")
+			# print(aim_goal)
 
-			if self.check_aim(aim_goal, current_pose):
-				print("Aiming!")
+			# if self.check_aim(aim_goal, current_pose):
+			# 	print("Aiming!")
 
-			else:
-				print("Not Aiming!")
+			# else:
+			# 	print("Not Aiming!")
 
 
 			rospy.sleep(0.5)
@@ -199,7 +200,9 @@ class AimTarget(object):
 	
 
 
-		""" moves baxter's left hand to a pose goal """	
+		""" moves baxter's left hand to a pose goal(wrote before realize darknet_ros can only give me
+		the pixel coordinate instead of coordinate in the world frame) """	
+
 		# aim_goal = geometry_msgs.msg.Pose()
 
 		# # try to set the orientation constant:
@@ -268,16 +271,16 @@ class AimTarget(object):
 
 		
 
-	# def display_trajectory(self, plan):
-	# 	""" Published planned trajectory in rviz
-	# 	Args:
-	# 		plan (): motion plan to goal
-	# 	"""
+	def display_trajectory(self, plan):
+		""" Published planned trajectory in rviz
+		Args:
+			plan (): motion plan to goal
+		"""
 
-	# 	display_traj = moveit_msgs.msg.DisplayTrajectory()
-	# 	display_traj.trajectory_start = self.robot.get_current_state()
-	# 	display_traj.trajectory.append(plan)
-	# 	self.display_trajectory_publisher.publish(display_traj);
+		display_traj = moveit_msgs.msg.DisplayTrajectory()
+		display_traj.trajectory_start = self.robot.get_current_state()
+		display_traj.trajectory.append(plan)
+		self.display_trajectory_publisher.publish(display_traj);
 
 	def check_aim(self, goal, actual):
 		""" Test if end effector made it to target
@@ -305,6 +308,7 @@ def main():
 
 	try:
 		aim_target = AimTarget()
+		# use it if not subscribe to any topic
 		# action = raw_input("(A)im the target?")
 		# if (action == "A"):
 		# 	aim_target.aim_goal()
