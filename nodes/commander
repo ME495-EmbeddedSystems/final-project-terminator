@@ -41,11 +41,11 @@ def enableBaxter():
     print("Baxter is enabled")
 
 
-def enableFace(face):
+def enableFace():
     """
     COMMANDER
     """
-    img = cv2.imread(face)
+    img = cv2.imread('/config/time_cop.jpg')
     msg = cv_bridge.CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
     pub = rospy.Publisher('/robot/xdisplay', Image, latch=True, queue_size=1)
     pub.publish(msg)
@@ -196,7 +196,7 @@ def main():
 if __name__ == '__main__':
     try:
         rospy.init_node("commander_client_py")
-        enableBaxter()
+        #enableFace()
         main()
     except rospy.ROSInterruptException:
         print("program interrupted before baxter could shoot")
