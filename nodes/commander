@@ -6,6 +6,11 @@ import sys
 import time
 
 import baxter_interface
+
+import cv2
+import cv_bridge
+from sensor_msgs.msg import Image
+
 import actionlib
 import moveit_commander
 
