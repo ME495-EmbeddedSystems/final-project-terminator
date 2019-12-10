@@ -1,10 +1,18 @@
-actions: []
+actions:
+- Commands
+- AimGun
 authors: ''
 brief: ''
 bugtracker: ''
 depends:
 - catkin
+- actionlib_msgs
+- message_runtime
+- std_msgs
+- rostest
 - rospy
+- rosunit
+- message_generation
 description: The terminator package
 license: MIT
 maintainers: bostoncleek <bostoncleek@todo.todo>
