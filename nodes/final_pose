@@ -1,5 +1,14 @@
 #!/usr/bin/env python
+"""
+DESCRIPTION:
++ Puts Baxter into final pose after firing gun
 
+PUBLISHERS:
++ display_trajectory_publisher (/move_group/display_planned_path) - displays trajectory in RViz
+
+ACTION SERVICES:
++ _as (finalcommander) - Initiates action service for commander node
+"""
 
 import sys
 import rospy
@@ -21,7 +30,9 @@ import terminator.msg
 
 
 class FinalPose(object):
-	""" manipulates baxters left arm """
+	"""
+	Initializes Baxter before moving to final position
+	"""
 
 	def __init__(self):
 
@@ -74,6 +85,12 @@ class FinalPose(object):
 
 
 	def execute_cb(self, goal):
+		"""
+		Action service callback function
+		sets action variables
+
+		ARGS: position goal
+		"""
 		print("in final pose cb")
 		# helper variables
 		r = rospy.Rate(1)
@@ -99,7 +116,9 @@ class FinalPose(object):
 
 
 	def move2final(self):
-
+		"""
+		Moves Baxter into final position
+		"""
 		curr_left_pose = self.left_group.get_current_pose().pose
 		curr_right_pose = self.right_group.get_current_pose().pose
 
@@ -107,35 +126,7 @@ class FinalPose(object):
 		left_pose_goal_second = geometry_msgs.msg.Pose()
 		right_pose_goal = geometry_msgs.msg.Pose()
 
-		# First pose goal:
-
-		# left_pose_goal_first.orientation.x = -0.532612
-		# left_pose_goal_first.orientation.y = 0.629328
-		# left_pose_goal_first.orientation.z = -0.369299
-		# left_pose_goal_first.orientation.w = -0.428824
-
-		# left_pose_goal_first.position.x = 0.5595036
-		# left_pose_goal_first.position.y = 0.116759
-		# left_pose_goal_first.position.z = 0.150905
-
-		#this one works:
-		# left_pose_goal_first.orientation.x = -0.140057
-		# left_pose_goal_first.orientation.y = 0.988831
-		# left_pose_goal_first.orientation.z = 0.0239579
-		# left_pose_goal_first.orientation.w = 0.0449773
-
-		# left_pose_goal_first.position.x = 0.288826
-		# left_pose_goal_first.position.y = 0.834644
-		# left_pose_goal_first.position.z = -0.298896
-		# left_pose_goal_first.orientation.x = 0.113925
-		# left_pose_goal_first.orientation.y = 0.713558
-		# left_pose_goal_first.orientation.z = 0.0196716
-		# left_pose_goal_first.orientation.w = 0.690992
-
-		# left_pose_goal_first.position.x = 0.982807
-		# left_pose_goal_first.position.y = 0.323895
-		# left_pose_goal_first.position.z = 0.65265
-
+		#  first left pose goal
 		left_pose_goal_first.orientation.x = -0.246768
 		left_pose_goal_first.orientation.y = 0.566032
 		left_pose_goal_first.orientation.z = 0.200956
@@ -145,6 +136,7 @@ class FinalPose(object):
 		left_pose_goal_first.position.y = 0.91752
 		left_pose_goal_first.position.z = 0.342625
 
+		# second left pose goal
 		left_pose_goal_second.orientation.x = 0.565137
 		left_pose_goal_second.orientation.y = 0.428452
 		left_pose_goal_second.orientation.z = 0.535989
@@ -154,17 +146,7 @@ class FinalPose(object):
 		left_pose_goal_second.position.y = 0.255187
 		left_pose_goal_second.position.z = 0.221742
 
-
-
-		# left_pose_goal_second.orientation.x = -0.184586
-		# left_pose_goal_second.orientation.y = 0.672009
-		# left_pose_goal_second.orientation.z = 0.254862
-		# left_pose_goal_second.orientation.w = 0.670356
-
-		# left_pose_goal_second.position.x = 0.780144
-		# left_pose_goal_second.position.y = 0.870125
-		# left_pose_goal_second.position.z = 0.279932
-
+		# right pose goal
 		right_pose_goal.orientation.x = -0.269023
 		right_pose_goal.orientation.y = 0.807661
 		right_pose_goal.orientation.z = 0.224343
@@ -173,22 +155,13 @@ class FinalPose(object):
 		right_pose_goal.position.x = 0.152432
 		right_pose_goal.position.y = -0.39597
 		right_pose_goal.position.z = -0.138595
-		
 
-
-		# right_pose_goal.orientation.x = 0.912343
-		# right_pose_goal.orientation.y = -0.349991
-		# right_pose_goal.orientation.z = -0.0176441
-		# right_pose_goal.orientation.w = 0.21172
-
-		# right_pose_goal.position.x = 0.247896
-		# right_pose_goal.position.y = -0.763482
-		# right_pose_goal.position.z = -0.439287
+		# plan cartesian trajectory
 		plan_left_second, fraction_left, plan_success = plan_cartesian_path(left_pose_goal_first, left_pose_goal_second, self.left_group)
 
 		print("The fraction of left hand path covered")
 
-		# display plan in rviz
+		# display left arm plan in rviz
 		display_trajectory(plan_left_second, self.robot, self.display_trajectory_publisher)
 
 		rospy.sleep(2)
@@ -197,7 +170,7 @@ class FinalPose(object):
 
 		print("The fraction of left hand path covered")
 
-		# display plan in rviz
+		# display left arm plan in rviz
 		display_trajectory(plan_left_first, self.robot, self.display_trajectory_publisher)
 
 		rospy.sleep(2)
@@ -206,13 +179,13 @@ class FinalPose(object):
 
 		print("The fraction of right hand path covered")
 
-		# display plan in rviz
+		# display right arm plan in rviz
 		display_trajectory(plan_right, self.robot, self.display_trajectory_publisher)
 
 		rospy.sleep(2)
 
 
-	
+
 
 		print("============ Press `Enter` to move final configuration ============")
 		raw_input()
@@ -226,24 +199,18 @@ class FinalPose(object):
 			rospy.sleep(2)
 
 			self.left_group.execute(plan_left_first, wait=True)
-			# self.left_group.stop()
-			# self.left_group.clear_pose_targets()
+			self.left_group.stop()
+			self.left_group.clear_pose_targets()
 
-			# wait for baxter to get to goal
+			wait for baxter to get to goal
 			rospy.sleep(2)
-
-		
 
 			self.left_group.execute(plan_left_second, wait=True)
 			self.left_group.stop()
 			self.left_group.clear_pose_targets()
-			
+
 			rospy.sleep(2)
-			
 
-
-
-			
 
 			return True
 		except (rospy.ServiceException, rospy.ROSException), e:
