@@ -1,5 +1,14 @@
 #!/usr/bin/env python
+"""
+DESCRIPTION:
++ Puts Baxter into final pose after firing gun
 
+PUBLISHERS:
++ display_trajectory_publisher (/move_group/display_planned_path) - displays trajectory in RViz
+
+ACTION SERVICES:
++ _as (finalcommander) - Initiates action service for commander node
+"""
 
 import sys
 import rospy
@@ -21,7 +30,9 @@ import terminator.msg
 
 
 class FinalPose(object):
-	""" manipulates baxters left arm """
+	"""
+	Initializes Baxter before moving to final position
+	"""
 
 	def __init__(self):
 
@@ -74,6 +85,12 @@ class FinalPose(object):
 
 
 	def execute_cb(self, goal):
+		"""
+		Action service callback function
+		sets action variables
+
+		ARGS: position goal
+		"""
 		print("in final pose cb")
 		# helper variables
 		r = rospy.Rate(1)
@@ -99,7 +116,9 @@ class FinalPose(object):
 
 
 	def move2final(self):
-
+		"""
+		Moves Baxter into final position
+		"""
 		curr_left_pose = self.left_group.get_current_pose().pose
 		curr_right_pose = self.right_group.get_current_pose().pose
 
@@ -173,7 +192,7 @@ class FinalPose(object):
 		right_pose_goal.position.x = 0.152432
 		right_pose_goal.position.y = -0.39597
 		right_pose_goal.position.z = -0.138595
-		
+
 
 
 		# right_pose_goal.orientation.x = 0.912343
@@ -212,7 +231,7 @@ class FinalPose(object):
 		rospy.sleep(2)
 
 
-	
+
 
 		print("============ Press `Enter` to move final configuration ============")
 		raw_input()
@@ -232,18 +251,12 @@ class FinalPose(object):
 			# wait for baxter to get to goal
 			rospy.sleep(2)
 
-		
-
 			self.left_group.execute(plan_left_second, wait=True)
 			self.left_group.stop()
 			self.left_group.clear_pose_targets()
-			
+
 			rospy.sleep(2)
-			
 
-
-
-			
 
 			return True
 		except (rospy.ServiceException, rospy.ROSException), e:
