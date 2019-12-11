@@ -4,6 +4,7 @@ import rospy
 import roslib
 import sys
 import time
+import rospkg
 
 import cv2
 import cv_bridge
@@ -30,8 +31,8 @@ use action server
 def enableBaxter():
 #    baxter_interface.RobotEnable().enable()
 #    rospy.sleep(0.25)
-    face = '/config/time_cop.jpg'
-    enableFace(face)
+    # face = '/config/time_cop.jpg'
+    # enableFace(face)
     # joint_state_topic = ['joint_states:=/robot/joint_states']
     # moveit_commander.roscpp_initialize(joint_state_topic)
     #
@@ -124,8 +125,8 @@ def main():
             aimclient.stop_tracking_goal()
             aimclient.cancel_all_goals()
 
-    # if True:
-    #     if True:
+    #if True:
+         #if True:
 
             print("canceled aiming")
 
@@ -191,10 +192,15 @@ def main():
 
 
 
+    print("Using Forward Kinematics To Initialize Pose")
+
 if __name__ == '__main__':
     try:
         rospy.init_node("commander_client_py")
-        enableBaxter()
+        rospack = rospkg.RosPack()
+        filepath = rospack.get_path('terminator')
+        face = filepath+'/config/time_cop.jpg'
+        enableFace(face)
         main()
     except rospy.ROSInterruptException:
         print("program interrupted before baxter could shoot")

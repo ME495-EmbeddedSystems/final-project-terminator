@@ -91,13 +91,13 @@ class RightArm(object):
         self.right_gripper.open()
 
         # gripper position tuning parameters
-        self.d = 0.0762 + 0.045
+        self.d = 0.0762 + 0.06
 
         self.x_coord = 0.1016
         self.y_coord = 0.1143
         self.z_coord = 0.0508
 
-        self.dx2 = 0.04
+        self.dx2 = 0.02
         self.dy2 = 0.05
 
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import rospy
+import roslib
 import baxter_interface
+roslib.load_manifest('terminator')
 
 def initPos():
     # move both arms to a good position before the initial poses
@@ -12,3 +14,17 @@ def initPos():
 
     left.move_to_joint_positions(lcmd)
     right.move_to_joint_positions(rcmd)
+
+def main():
+    rospy.init_node("safe_arm", anonymous=True)
+
+    try:
+        initPos()
+    except rospy.ROSInterruptException:
+        return
+    except KeyboardInterrupt:
+        return
+
+
+if __name__ == '__main__':
+    main()

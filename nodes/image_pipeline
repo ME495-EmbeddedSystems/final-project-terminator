@@ -58,7 +58,7 @@ class imageProcessor:
         self.pub2.publish(data)
 
         # This will publish the wrist cam to the head display
-        # self.pubToHead.publish(data)
+        self.pubToHead.publish(data)
 
     # This function takes the classification data from YOLO ROS
     # and finds the (x,y) pair of the most probable desired object
@@ -160,6 +160,10 @@ class imageProcessor:
 
         self.publishOurCalibration.publish(self.calibrationInfo)
 
+    def sendYOLO_to_baxter_head(self, data):
+        # This will publish the wrist cam to the head display
+        # self.pubToHead.publish(data)
+        pass
 
     # Constructor method
     def __init__(self):

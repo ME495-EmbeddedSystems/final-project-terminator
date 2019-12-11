@@ -114,11 +114,11 @@ class LeftArm(object):
 
         # position adjustment parameters
         self.x_coord = 0.135
-        self.y_coord = 0.17
+        self.y_coord = 0.175
         self.z_coord = 0.01
 
         self.dy = 0.01
-        self.dz = 0.025
+        self.dz = 0.005
 
         # trajectory in RVIZ
         self.display_trajectory_publisher = rospy.Publisher(
@@ -171,6 +171,8 @@ class LeftArm(object):
 
         self._asgun.start()
         self._asaim.start()
+
+
 
 
 
@@ -381,7 +383,7 @@ class LeftArm(object):
             print("grasp")
             # move to grasp pose
             pose_goal.position.x = left_EE_pose.position.x + self.x_coord
-            pose_goal.position.y = left_EE_pose.position.y + self.dy
+            pose_goal.position.y = left_EE_pose.position.y #+ self.dy
             pose_goal.position.z = left_EE_pose.position.z + self.dz
 
 
