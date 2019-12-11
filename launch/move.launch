@@ -1,23 +1,20 @@
 <launch>
 
-  <!-- Setup the grippers: -->
-  <!--
-  <node pkg="terminator" type="add_grippers.sh" name="gripper_modifier" output="screen" respawn="false" /> -->
-
   <!-- Start the baxter interface package -->
     <node name="joint_trajectory_action_server" pkg="baxter_interface" type="joint_trajectory_action_server.py" />
     <include file="$(find baxter_moveit_config)/launch/baxter_grippers.launch" />
 
-<!--
-     <node name="move_left" pkg="terminator" type="move_left" output="screen" />
-   -->
-<!--
-   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
--->
-
+  <!-- Needed for state feedback for gripper pose -->
    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
       <param name="use_gui" value="false" />
    </node>
+
+   <!-- launch the image processing pipeline -->
+   <include file = "$(find terminator)/launch/image_pipeline.launch" />
+
+   <!-- launch nodes to move left and right arms -->
+   <include file = "$(find terminator)/launch/manipulate.launch" />
+
 
 
 </launch>
