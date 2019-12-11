@@ -1,31 +1,45 @@
 #!/usr/bin/env python
 """
+    DESCRIPTION:
+    This node implements our image processing pipeline. It takes in data from
+    cameras and distributes it to the external package nodes that process it.
+    It also recieves the processed data from the external nodes and publishes it
+    to the nodes implementing the moving of Baxter.
 
-    Node Description: This node implements our image processing pipeline.
-    It takes in data from cameras and distributes it to the external package
-    nodes that process it. It also recieves the processed data from the external
-    nodes and publishes it to the nodes implementing the moving of Baxter
+    SUBSCRIBERS:
+    + leftCamera (/cameras/left_hand_camera/image) - Wrist camera's image
+      type = sensor_msgs/Image
 
-    Subscribers: We subscribe to
-    /cameras/left_hand_camera/image - type = sensor_msgs/Image. This is the wrist
-    camera's image
-    /cameras/eft_hand_camera/camera_info = type = sensor_msg/CameraInfo. This
-    is the Camera's calibration matrix
-    /darknet_ros/bounding_boxes = type BoundingBox - which is an
-    array of classification types and (x,y) pairs associated with it
+    + calibrationMatrixLeftSub (/cameras/left_hand_camera/camera_info) - Camera's calibration matrix
+      type = sensor_msg/CameraInfo
 
+    + rectifiedDistributor (/image_rect) - Redistributes the rectified image to the april tags detector
+      type = sensor_msgs/Image
 
-    Publishers: This node publishes on the topics that YOLO ROS requires
-    in order to process images. camerInfo is the camera's calibration matrix.
-    image_rect is the actual image from Baxter's right wrist camera
-    Topics:
-    /camera_rect/camera_info type = sensor_msgs/CameraInfo
-    /camera_rect/image_rect = sensor_msgs/Image
-    /targetBox = type = darkntros_msgs/BoundingBox which is the
-    target's bounding box in the image
+    + result_image (/darknet_ros/bounding_boxes) - Subscribes to YOLO ROS's description of where the objects are
+      type = darknet_ros_msgs/BoundingBox (an array of classification types and (x,y) pairs associated with it)
 
+    + apriltags (/tag_detections) - Subscribes to the april tag classification data stream
+      type = apriltag_ros/AprilTagDetectionArray
 
+    PUBLISHERS:
+    + calibrationMatrixLeftPub (/camera_rect/camera_info) - camera's calibration matrix
+    type = sensor_msgs/CameraInfo
 
+    + redistributeCameraInfo (/camera_info) - actual image from Baxter's right wrist camera
+    type = sensor_msgs/Image
+
+    + redistributeCameraInfo2 (/camera_rect/camera_info) - actual image from Baxter's right wrist camera
+    type = sensor_msgs/Image
+
+    + pub (/image_raw) - raw camera feed
+    + pub2 (/image_color) - color camera feed
+
+    + publishRectified (/camera_rect/image_rect) - Redistributes the rectified image to the april tags detector
+
+    + targetInfo (/targetBox) - Publishes the target's location
+
+    + desiredGunPose (/gun_pose) - Publishes desired gun pose
 """
 
 import math
@@ -41,8 +55,6 @@ from darknet_ros_msgs.msg import BoundingBoxes
 from apriltag_ros.msg import AprilTagDetectionArray
 from geometry_msgs.msg import Pose, Point
 
-from std_msgs.msg import String
-
 
 # This class implements the image processing pipeline
 # for our given task
@@ -56,9 +68,6 @@ class imageProcessor:
         # Publish the image we recieved so YOLO ROS can process it
         self.pub.publish(data)
         self.pub2.publish(data)
-
-        # This will publish the wrist cam to the head display
-        self.pubToHead.publish(data)
 
     # This function takes the classification data from YOLO ROS
     # and finds the (x,y) pair of the most probable desired object
@@ -149,30 +158,12 @@ class imageProcessor:
     def distributeRectified(self, data):
         self.publishRectified.publish(data)
 
-
-    def image_size(self, data):
-        print("Height", data.height)
-        print("Width", data.width)
-
-
-    # A rospy timer publishes this information
-    def publishOurCalibration(self):
-
-        self.publishOurCalibration.publish(self.calibrationInfo)
-
-    def sendYOLO_to_baxter_head(self, data):
-        # This will publish the wrist cam to the head display
-        # self.pubToHead.publish(data)
-        pass
-
     # Constructor method
     def __init__(self):
         self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_initial_image)
 
         # self.leftCamera = rospy.Subscriber("/cameras/left_hand_camera/image", Image, self.process_image)
         # self.headCamera = rospy.Subscriber("/cameras/head_camera/image", Image, self.process_image)
-
-        # self.calibrationMatrixLeftSub = rospy.Subscriber("/custom_calibration", CameraInfo, self.publish_left_calibration)
 
         self.calibrationMatrixLeftSub = rospy.Subscriber("/cameras/left_hand_camera/camera_info_std", CameraInfo, self.publish_left_calibration)
         self.calibrationMatrixLeftPub =  rospy.Publisher("/camera/camera_info", CameraInfo, queue_size = 1)
@@ -182,24 +173,13 @@ class imageProcessor:
 
 
         self.pub = rospy.Publisher("/image_raw", Image, queue_size = 1)
-        # self.pub2 = rospy.Publisher("/image_color", Image, queue_size = 1)
-        self.pub2 = rospy.Publisher("/image_rect_color", Image, queue_size = 1)
+        self.pub2 = rospy.Publisher("/image_color", Image, queue_size = 1)
 
         # Redistributes the rectified image to the april tags detector
         self.rectifiedDistributor = rospy.Subscriber( "/image_rect", Image, self.distributeRectified )
         self.publishRectified = rospy.Publisher( "/camera_rect/image_rect", Image, queue_size = 1   )
 
-        # Publish to the head camera
-        self.pubToHead = rospy.Publisher( "/robot/head_display", Image, queue_size = 1 )
-
-
-        self.publishOurCalibration = rospy.Publisher( "/custom_calibration", CameraInfo, queue_size = 1   )
-
-        ##########
-        self.image_Sub = rospy.Subscriber("/darknet_ros/detection_image", Image, self.image_size)
-        #########
-
-        self.timer = None
+        # /camera_rect/image_rect
 
         # Subscribe to YOLO ROS's description of where the objects are
         self.result_image = rospy.Subscriber("/darknet_ros/bounding_boxes", BoundingBoxes, self.process_final_image)
@@ -211,25 +191,6 @@ class imageProcessor:
         self.apriltags = rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.apriltag_callback)
         self.desiredGunPose = rospy.Publisher("/gun_pose", Pose, queue_size = 1 )
 
-
-        # Construct our calibration matrix
-        self.calibrationInfo = CameraInfo()
-
-        # How to set this?
-        # self.calibrationInfo.header
-
-        self.height = 800.0
-        self.width = 1280.0
-        self.distortion_model = "plumb_bob"
-        # The distortion parameters, size depending on the distortion model.
-        # For "plumb_bob", the 5 parameters are: (k1, k2, t1, t2, k3).
-        self.D = [ -0.032957, -0.003448, 0.000304, 0.000864, 0.000000 ]
-        # Calibration matrix
-        self.K = [ 406.348604, 0.000000, 655.698671, 0.000000, 406.130169, 426.434214, 0.000000, 0.000000, 1.000000 ]
-        self.R = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-
-
-
 # Main Function
 if __name__ == "__main__":
 
@@ -237,11 +198,6 @@ if __name__ == "__main__":
 
     # create object
     my_imageProcessor = imageProcessor()
-
-    # Use a timer to publish our calibration matrix every 0.3 seconds
-    while (True):
-        my_imageProcessor.publishOurCalibration.publish(my_imageProcessor.calibrationInfo  )
-
 
     # Keep the thread alive by spinning
     rospy.spin()

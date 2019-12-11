@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-
-
 """
-
 PUBLSIHERS:
-    +
+    + display_trajectory_publisher (/move_group/display_planned_path) - displays trajectory in RViz
 
 SUBSCRIBERS:
-    +
+    + gun_pose_sub (/targetBox) - subscribes to targetBox, calls self.aim
+    + gun_pose_sub (/start_aiming) - subscribes to start_aiming, calls self.initiate_aiming
+
+ACTION SERVICES:
+    + _asgun (guncommander) - Initiates action service for commander node
+    + _asaim (aimcommander) - Initiates action service for commander node
 """
 
 from __future__ import division
