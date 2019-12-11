@@ -19,25 +19,10 @@ add_rostest(test/myTest.test)
 endif()
 
 
-# Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
 ## Generate actions in the 'action' folder
 add_action_files(
    DIRECTORY action
    FILES
-   AimGun.action
    Commands.action
 )
 
@@ -67,23 +52,14 @@ catkin_package(
 
 
 install(PROGRAMS
-   nodes/aim_target
    nodes/image_pipeline
    nodes/move_left
    nodes/move_right
-
-   nodes/commander
-   nodes/move_left_actiontest
-   nodes/move_right_actiontest
-
-#   nodes/mastercommander
-   nodes/final_pose
-   nodes/finalpose_test
-#   nodes/lefttest2
-#   nodes/righttest2
    nodes/safe_arms
-
-   #src/terminator/gripper.py
+   nodes/commander
+   nodes/final_pose
+   src/terminator/gripper.py
+   config/connect.sh
 
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
