@@ -3,7 +3,7 @@
     local-name: moveit_robots
     uri: https://github.com/ME495-EmbeddedSystems/moveit_robots.git
 - git:
-    local-name: moveit_robots
+    local-name: apriltag_ros
     uri: https://github.com/ME495-EmbeddedSystems/apriltag_ros.git
 - git:
     local-name: baxter
