@@ -1,4 +1,23 @@
 #!/usr/bin/env python
+"""
+DESCRIPTION:
++ Integrates all the nodes
++ Receives messages to know the current state of the robot
++ Sends messages to transition between different states of the robot to drive the motion sequence
+
+
++ Goals are requested on client side
++ Goals are executed on server side
+
+ACTION CLIENTS:
++ pickgunclient (guncommander) - Calls service to find/pick up gun
++ aimclient (aimcommander) - Calls service to aim gun
++ triggerclient (triggercommander) - Calls service to move right arm to trigger position
++ fireclient (firecommander) - Calls service to pull trigger
++ finalclient (finalcommander) - Calls service to move to final pose
+
+"""
+
 import rospy
 
 import roslib
@@ -17,17 +36,6 @@ roslib.load_manifest('terminator')
 
 import terminator.msg
 
-
-"""
-Integrates all the nodes
-Receives messages to know the current state of the robot
-Sends messages to transition between different states of the robot to drive the motion sequence
-
-use action server
-  goals are executed on server side
-  goals are requested on client side
-"""
-
 def enableBaxter():
 #    baxter_interface.RobotEnable().enable()
 #    rospy.sleep(0.25)
@@ -44,7 +52,7 @@ def enableBaxter():
 
 def enableFace(face):
     """
-    COMMANDER
+    Enables face with Time Cop image
     """
     img = cv2.imread(face)
     msg = cv_bridge.CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
@@ -55,8 +63,6 @@ def enableFace(face):
 
 def calibrateGripper(side):
     """
-    SCRIPT
-
     Define gripper
     Reboot gripper
     Calibrate gripper
@@ -69,9 +75,9 @@ def calibrateGripper(side):
     gripper.open()
 
 def main():
-
-    # get baxter to move to a good initial pose for its arms
-
+    """
+    Runs trhough routine with human safety checks
+    """
     pickgunclient = actionlib.SimpleActionClient('guncommander', terminator.msg.CommandsAction)
     aimclient = actionlib.SimpleActionClient('aimcommander', terminator.msg.CommandsAction)
     triggerclient = actionlib.SimpleActionClient('triggercommander', terminator.msg.CommandsAction)
