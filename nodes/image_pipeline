@@ -1,45 +1,45 @@
 #!/usr/bin/env python
 """
-    DESCRIPTION:
-    This node implements our image processing pipeline. It takes in data from
-    cameras and distributes it to the external package nodes that process it.
-    It also recieves the processed data from the external nodes and publishes it
-    to the nodes implementing the moving of Baxter.
+DESCRIPTION:
++ Takes in data from cameras and distributes it to the external package nodes that process it.
++ Recieves the processed data from the external nodes and publishes it to the nodes implementing the moving of Baxter.
 
-    SUBSCRIBERS:
-    + leftCamera (/cameras/left_hand_camera/image) - Wrist camera's image
-      type = sensor_msgs/Image
 
-    + calibrationMatrixLeftSub (/cameras/left_hand_camera/camera_info) - Camera's calibration matrix
-      type = sensor_msg/CameraInfo
+SUBSCRIBERS:
++ leftCamera (/cameras/left_hand_camera/image) - Wrist camera's image
+  type = sensor_msgs/Image
 
-    + rectifiedDistributor (/image_rect) - Redistributes the rectified image to the april tags detector
-      type = sensor_msgs/Image
++ calibrationMatrixLeftSub (/cameras/left_hand_camera/camera_info) - Camera's calibration matrix
+  type = sensor_msg/CameraInfo
 
-    + result_image (/darknet_ros/bounding_boxes) - Subscribes to YOLO ROS's description of where the objects are
-      type = darknet_ros_msgs/BoundingBox (an array of classification types and (x,y) pairs associated with it)
++ rectifiedDistributor (/image_rect) - Redistributes the rectified image to the april tags detector
+  type = sensor_msgs/Image
 
-    + apriltags (/tag_detections) - Subscribes to the april tag classification data stream
-      type = apriltag_ros/AprilTagDetectionArray
++ result_image (/darknet_ros/bounding_boxes) - Subscribes to YOLO ROS's description of where the objects are
+  type = darknet_ros_msgs/BoundingBox (an array of classification types and (x,y) pairs associated with it)
 
-    PUBLISHERS:
-    + calibrationMatrixLeftPub (/camera_rect/camera_info) - camera's calibration matrix
-    type = sensor_msgs/CameraInfo
++ apriltags (/tag_detections) - Subscribes to the april tag classification data stream
+  type = apriltag_ros/AprilTagDetectionArray
 
-    + redistributeCameraInfo (/camera_info) - actual image from Baxter's right wrist camera
-    type = sensor_msgs/Image
 
-    + redistributeCameraInfo2 (/camera_rect/camera_info) - actual image from Baxter's right wrist camera
-    type = sensor_msgs/Image
+PUBLISHERS:
++ calibrationMatrixLeftPub (/camera_rect/camera_info) - camera's calibration matrix
+type = sensor_msgs/CameraInfo
 
-    + pub (/image_raw) - raw camera feed
-    + pub2 (/image_color) - color camera feed
++ redistributeCameraInfo (/camera_info) - actual image from Baxter's right wrist camera
+type = sensor_msgs/Image
 
-    + publishRectified (/camera_rect/image_rect) - Redistributes the rectified image to the april tags detector
++ redistributeCameraInfo2 (/camera_rect/camera_info) - actual image from Baxter's right wrist camera
+type = sensor_msgs/Image
 
-    + targetInfo (/targetBox) - Publishes the target's location
++ pub (/image_raw) - raw camera feed
++ pub2 (/image_color) - color camera feed
 
-    + desiredGunPose (/gun_pose) - Publishes desired gun pose
++ publishRectified (/camera_rect/image_rect) - Redistributes the rectified image to the april tags detector
+
++ targetInfo (/targetBox) - Publishes the target's location
+
++ desiredGunPose (/gun_pose) - Publishes desired gun pose
 """
 
 import math

@@ -1,15 +1,20 @@
 #!/usr/bin/env python
 """
+DESCRIPTION:
++ Moves left arm to locate gun
++ Moves left arm to pick up gun
++ Moves left arm to find target
+
 PUBLSIHERS:
-    + display_trajectory_publisher (/move_group/display_planned_path) - displays trajectory in RViz
++ display_trajectory_publisher (/move_group/display_planned_path) - displays trajectory in RViz
 
 SUBSCRIBERS:
-    + gun_pose_sub (/targetBox) - subscribes to targetBox, calls self.aim
-    + gun_pose_sub (/start_aiming) - subscribes to start_aiming, calls self.initiate_aiming
++ gun_pose_sub (/targetBox) - subscribes to targetBox, calls self.aim
++ gun_pose_sub (/start_aiming) - subscribes to start_aiming, calls self.initiate_aiming
 
 ACTION SERVICES:
-    + _asgun (guncommander) - Initiates action service for commander node
-    + _asaim (aimcommander) - Initiates action service for commander node
++ _asgun (guncommander) - Initiates action service for commander node
++ _asaim (aimcommander) - Initiates action service for commander node
 """
 
 from __future__ import division
@@ -40,9 +45,6 @@ roslib.load_manifest('terminator')
 import actionlib
 from std_msgs.msg import Bool
 
-
-#from terminator.msg import AimGunAction, AimGunFeedback, AimGunResult
-#from terminator.msg import CommandsAction, CommandsFeedback, CommandsResult
 import terminator.msg
 
 from terminator import*
@@ -60,21 +62,12 @@ class LeftArm(object):
         joint_state_topic = ['joint_states:=/robot/joint_states']
         moveit_commander.roscpp_initialize(joint_state_topic)
 
-
         self.plan_attempts = 3
-
-
-        # # TODO: move this to the commander main node
-        # baxter_interface.RobotEnable().enable()
-        # rospy.sleep(0.25)
-        # print("Baxter is enabled")
-
 
         #moveit_commander.roscpp_initialize(sys.argv)
         moveit_commander.roscpp_initialize(sys.argv)
         self.robot = moveit_commander.RobotCommander()
         self.scene = moveit_commander.PlanningSceneInterface()
-
 
         self.left_group = moveit_commander.MoveGroupCommander("left_arm")
 
@@ -88,15 +81,6 @@ class LeftArm(object):
         self.left_group.allow_replanning(True)
         self.left_group.set_max_velocity_scaling_factor(0.15)
         self.left_group.set_max_acceleration_scaling_factor(0.1)
-
-        # gripper
-        self.left_gripper = Gripper('left', CHECK_VERSION)
-        # Reboot Gripper
-        self.left_gripper.reboot()
-        # Calibrate Gripper
-        self.left_gripper.calibrate()
-        # Open Gripper
-        self.left_gripper.open()
 
         self.orientation_x = -0.003
         self.orientation_y = 0.696
@@ -128,7 +112,6 @@ class LeftArm(object):
             moveit_msgs.msg.DisplayTrajectory,
             queue_size=20)
 
-
         # init pose goal for right EE
         self.init_goal = geometry_msgs.msg.Pose()
         self.init_goal.orientation.x = 0.065
@@ -140,10 +123,8 @@ class LeftArm(object):
         self.init_goal.position.y = 0.6#0.531
         self.init_goal.position.z = -0.15
 
-
         # pose of the tag
         self.tag_pose = None
-
 
         # place arm in init position
         #arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
@@ -174,13 +155,7 @@ class LeftArm(object):
         self._asgun.start()
         self._asaim.start()
 
-
-
-
-
         print("Done Initializing Baxter Left Arm")
-
-
 
     # def execute(self, goal):
     #
@@ -199,6 +174,13 @@ class LeftArm(object):
 
 
     def gunexecute_cb(self, goal):
+		"""
+		Action service callback function
+		sets action variables
+
+		ARGS: action goal
+		"""
+
         print("in gun cb")
         # helper variables
         r = rospy.Rate(1)
@@ -227,6 +209,13 @@ class LeftArm(object):
 
 
     def aimexecute_cb(self, goal):
+		"""
+		Action service callback function
+		sets action variables
+
+		ARGS: action goal
+		"""
+
         print("in aim cb")
         # helper variables
         r = rospy.Rate(1)
@@ -280,7 +269,6 @@ class LeftArm(object):
         self.tag_pose = msg
 
 
-
     def pick_up_gun(self, pose_tag):
         """ callback function for Subscriber to /gun_pose
 
@@ -327,9 +315,6 @@ class LeftArm(object):
 
         return False
 
-
-
-
     def move_gripper(self, pose_tag, pre_standoff=False, post_standoff=False, grasp=False, aiming=False):
         """ moves gripper to a goal pose
 
@@ -356,7 +341,6 @@ class LeftArm(object):
         print("pose of tag")
         print(trans)
         print(quat)
-
 
         # move EE right behind gun and stop
         pose_goal = geometry_msgs.msg.Pose()
@@ -576,14 +560,9 @@ class LeftArm(object):
             # except (rospy.ServiceException, rospy.ROSException), e:
             #     rospy.loginfo("Service call failed: %s" % (e,))
 
-
             rospy.sleep(1)
 
-
         return success
-
-
-
 
 
 def main():
