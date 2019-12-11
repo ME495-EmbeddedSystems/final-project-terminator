@@ -154,7 +154,7 @@ class RightArm(object):
                 self._astrig.set_preempted()
                 success = False
 
-            arm_init_pose(self.init_goal, self.right_group, self.position_tol, self.orientation_tol, "Right")
+            #arm_init_pose(self.init_goal, self.right_group, self.position_tol, self.orientation_tol, "Right")
             success = self.position_trigger()
 
         else:
