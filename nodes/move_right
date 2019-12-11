@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-
 """
+DESCRIPTION:
++ Moves right arm into position and pulls trigger
 
 PUBLSIHERS:
-    +
++ display_trajectory_publisher (/move_group/display_planned_path) - displays trajectory in RViz
 
-SUBSCRIBERS:
-    +
+ACTION SERVICES:
++ _astrig (triggercommander) - Initiates action service for commander node
++ _asfire (firecommander) - Initiates action service for commander node
 """
 
 from __future__ import division
@@ -26,8 +28,6 @@ import baxter_interface
 from baxter_interface import Gripper, CHECK_VERSION
 from sensor_msgs.msg import Range
 import tf.transformations as tr
-
-
 
 import roslib
 roslib.load_manifest('terminator')
@@ -51,17 +51,9 @@ class RightArm(object):
         joint_state_topic = ['joint_states:=/robot/joint_states']
         moveit_commander.roscpp_initialize(joint_state_topic)
 
-
-
-        # TODO: move this to the commander main node
-        # baxter_interface.RobotEnable().enable()
-        # rospy.sleep(0.25)
-        # print("Baxter is enabled")
-
         moveit_commander.roscpp_initialize(sys.argv)
         self.robot = moveit_commander.RobotCommander()
         self.scene = moveit_commander.PlanningSceneInterface()
-
 
         self.right_group = moveit_commander.MoveGroupCommander("right_arm")
 
@@ -80,16 +72,6 @@ class RightArm(object):
         self.right_group.set_max_velocity_scaling_factor(0.2)
         self.right_group.set_max_acceleration_scaling_factor(0.1)
 
-
-        # gripper
-        self.right_gripper = Gripper('right', CHECK_VERSION)
-        # Reboot Gripper
-        self.right_gripper.reboot()
-        # Calibrate Gripper
-        self.right_gripper.calibrate()
-        # Open Gripper
-        self.right_gripper.open()
-
         # gripper position tuning parameters
         self.d = 0.0762 + 0.06
 
@@ -100,13 +82,11 @@ class RightArm(object):
         self.dx2 = 0.02
         self.dy2 = 0.05
 
-
         # trajectory in RVIZ
         self.display_trajectory_publisher = rospy.Publisher(
             '/move_group/display_planned_path',
             moveit_msgs.msg.DisplayTrajectory,
             queue_size=20)
-
 
         # init pose goal for left EE
         self.init_goal = geometry_msgs.msg.Pose()
@@ -119,10 +99,8 @@ class RightArm(object):
         self.init_goal.position.y = -0.25
         self.init_goal.position.z = 0.30
 
-
         # place arm in init position
         #arm_init_pose(init_goal, self.right_group, self.position_tol, self.orientation_tol, "Right")
-
 
         # action server
         self._triggerfeedback = terminator.msg.CommandsFeedback()
@@ -137,12 +115,16 @@ class RightArm(object):
         self._astrig.start()
         self._asfire.start()
 
-
         print("Done Initializing Baxter Right Arm")
 
-
-
     def triggerexecute_cb(self, goal):
+		"""
+		Action service callback function
+		sets action variables
+
+		ARGS: action goal
+		"""
+
         print("in trigger cb")
         # helper variables
         r = rospy.Rate(1)
@@ -171,6 +153,13 @@ class RightArm(object):
 
 
     def fireexecute_cb(self, goal):
+		"""
+		Action service callback function
+		sets action variables
+
+		ARGS: action goal
+		"""
+
         print("in trigger cb")
         # helper variables
         r = rospy.Rate(1)
@@ -185,7 +174,6 @@ class RightArm(object):
             self.fire_gun()
             success = True
 
-
         else:
             print(":( - didn't fire...")
             success = False
@@ -196,10 +184,6 @@ class RightArm(object):
             self._asfire.set_succeeded(self._fireresult)
         else:
             self._fireresult.completion = False
-
-
-
-
 
     def position_trigger(self):
         """ places the right gripper at the trigger
@@ -309,20 +293,15 @@ class RightArm(object):
         # only check position of goal
         return made_it_position(pose_goal, right_EE_pose, self.position_tol)
 
-
-
     def fire_gun(self):
 
         # stage 3
-        print("============ Press `Enter` to close left gripper ============")
+        print("============ Press `Enter` to close right gripper ============")
         #raw_input()
         self.right_gripper.close()
         rospy.sleep(2)
 
         self.right_gripper.open()
-
-
-
 
 def main():
     rospy.init_node("right_arm", anonymous=True)
