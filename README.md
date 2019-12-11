@@ -60,9 +60,6 @@ manipulate.launch
 ### commander
 The commander node runs an action server to orchestrate the state machine.
 
-### final_pose
-
-
 ### image_pipeline
 The image pipeline node gets the image from baxter's hand cameras, rectifies it, and sends it to darknet. Darknet then returns a list of objects it has detected in the image. The image_pipeline node then finds the most probabale cup in the classified list and publishes this object's (x,y) pair in the image.
 
@@ -74,7 +71,8 @@ This node primarily takes advantage of moveit's path planning function `compute_
 ### move_right
 This node is responsible for manipulation of the right arm. This node is responsible for pulling the trigger. The same implementations are used as described in the `move_left` node description above. In order to pull the trigger the right gripper goes to a standoff position that is perpendicular to the left gripper. From there the right gripper moves in to pull the trigger but first waits for the user to type yes in the terminal. 
 
-
+### final_pose
+This node is responsible for manipulation of both the left and right arm. This node is responsible for reaching the final configuration. The same implementations are used as described in the `move_left` node description above. Two goals for the left arm and one goal for the right arm are pre-coded. After the commander send yes to this node, the right arm would move to the goal, then the left arm would first got to the first goal and then to the second goal.
 
 ## Launchfiles
 image_pipeline.launch launches darknet_ros, apriltags_ros, imageproc, the image_pipeline node, and an image view node.
@@ -102,6 +100,15 @@ We forked the library and made a few small configuration changes. The forked rep
 We forked the apriltags_ros library and included our copy in the terminator.rosinstall file.
 This library detects april tags in the enviroment. In order to use it, one needs to edit apriltag_ros/apriltag_ros/config/tags.yaml with the family, id and sizes of the tags you want the library to recognize.
 
+## Difficulties
+MoveIt! Gave us some very roundabout, unsafe and inefficient paths when simply trying to reach a certain configuration. The controller of  moveit can always failed.
+
+The precision of the movements required created very tight tolerances that Baxter had difficulties achieving, either due to the nature of his actuators or the calibration of the arms. Baxter has a safety system in place so that he doesn’t collide with himself. This proved to be a challenge because the gun is small; attempting to pull the trigger with the right arm while the left arm holds the gun instigated the safety system and would move his hands away from each other. The grippers also occluded the cameras used for tracking targets. 
+
+Workarounds that we implemented were changing his grippers with 3D printed ones that raised the point of contact with his grippers, used in tandem with a 3D printed blocked that slid onto the rail of the gun. The block served a variety of purposes; first it raised the gun further, keeping the camera vision as clear as possible, but it also moved the gun further from Baxter’s left gripper, increasing the tolerance the right gripper had to pull the trigger. Raising the gun also allowed it to be handled while cocked. While cocked, the gun’s spring loaded piston extends backwards. Raising the gun allowed the piston to freely move above Baxter’s wrist. We also experimented with using longer grippers for the trigger hand, but found that using the stock, wide grippers was sufficient to pull the trigger.
+
+Implementing Darknet proved to be challenging as well. While Darknet objectively does the job of classifying objects in the camera frame, it was often inconsistent, thus the experimental setup had to be robust to provide a consistent environment for Baxter to operate in and perform the routine consistently. First, a cup was used as a target for the project. The inconsistency of Darknet required using multiple cups in an effort to brute-force Baxter into recognizing at least one. Other objects could be easier. For example, Baxter has no difficulty recognizing people, but that ethically crosses some boundaries. 
+Further addressing the experimental setup, the tables used were marked on the floor with tape so that they were in the same position for each test run, and a crude holster was constructed so that the gun was consistently in the same place. The same initial positions of the arm were also hard coded to improve consistency in path planning.
 
 
 ## Future Work
