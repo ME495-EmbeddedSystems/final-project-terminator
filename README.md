@@ -12,19 +12,34 @@ sudo apt install ros-melodic-moveit
 sudo apt install ros-melodic-apriltag-ros
 ```
 
+## Quickstart Guide
+1) ```mkdir -p terminator_ws/src ```
 
-## connecting and enabling
-To connect to robot and enable it
+2)``` cd terminator_ws/src ```
+
+3) download terminator.rosinstall
+
+4) ```wstool init```
+
+5) ```wstool merge terminator.rosinstall```
+
+6)```wstool update```
+
+7)```~/terminator```
+
+8)```catkin_make``` followed by ```source devel/setup.bash```
+
+9)To connect to robot and enable it
 ```
 source src/final-project-terminator/config/connect.sh
+
 ```
+10) ``` rosrun terminator safe_arms```
 
+11) ```roslaunch terminator move.launch ```
 
-export ROS_MASTER_URI=http://10.42.0.2:11311
-export ROS_IP=10.42.0.1
+12) ```rosrun terminator commander```
 
-to make sure environment variables have been set, run`echo $ROS_MASTER_URI`
-and `echo $ROS_IP` or run `ping 10.42.0.2` make sure is getting data
 
 ## Goal
 Baxter picks up a nerf gun, locates a cup, pulls trigger when given a user input, and moves to a final pose.
@@ -69,7 +84,7 @@ This node is responsible for manipulation of the left arm. This node is responsi
 This node primarily takes advantage of moveit's path planning function `compute_cartesian_path()` to develop a plan between two pose goals. In `src/terminator/gripper.py` the implementation of most of moveit's functionality for manipulation can be found. The function `plan_cartesian_path()` calls `compute_cartesian_path()` and linearly interpolates a trajectory consisting of 10 waypoints between start and goal poses for a gripper. The function `compute_cartesian_path()` returns a fraction describing how much of the desired trajectory can be completed. If the planner can complete less than 80% of the trajectory the moveit planner has 3 more attempts. If the planner can not reach the threshold of 80% the moveit function `set_pose_target()` is used for manipulation. After a gripper reaches the end of its trajectory the pose is recorded using moveit's function `get_current_pose()`. If the pose is within the desired tolerances it is considered a successful move and the goal has been reached.
 
 ### move_right
-This node is responsible for manipulation of the right arm. This node is responsible for pulling the trigger. The same implementations are used as described in the `move_left` node description above. In order to pull the trigger the right gripper goes to a standoff position that is perpendicular to the left gripper. From there the right gripper moves in to pull the trigger but first waits for the user to type yes in the terminal. 
+This node is responsible for manipulation of the right arm. This node is responsible for pulling the trigger. The same implementations are used as described in the `move_left` node description above. In order to pull the trigger the right gripper goes to a standoff position that is perpendicular to the left gripper. From there the right gripper moves in to pull the trigger but first waits for the user to type yes in the terminal.
 
 ### final_pose
 This node is responsible for manipulation of both the left and right arm. This node is responsible for reaching the final configuration. The same implementations are used as described in the `move_left` node description above. Two goals for the left arm and one goal for the right arm are pre-coded. After the commander send yes to this node, the right arm would move to the goal, then the left arm would first got to the first goal and then to the second goal.
@@ -103,11 +118,11 @@ This library detects april tags in the enviroment. In order to use it, one needs
 ## Difficulties
 MoveIt! Gave us some very roundabout, unsafe and inefficient paths when simply trying to reach a certain configuration. The controller of  moveit can always failed.
 
-The precision of the movements required created very tight tolerances that Baxter had difficulties achieving, either due to the nature of his actuators or the calibration of the arms. Baxter has a safety system in place so that he doesn’t collide with himself. This proved to be a challenge because the gun is small; attempting to pull the trigger with the right arm while the left arm holds the gun instigated the safety system and would move his hands away from each other. The grippers also occluded the cameras used for tracking targets. 
+The precision of the movements required created very tight tolerances that Baxter had difficulties achieving, either due to the nature of his actuators or the calibration of the arms. Baxter has a safety system in place so that he doesn’t collide with himself. This proved to be a challenge because the gun is small; attempting to pull the trigger with the right arm while the left arm holds the gun instigated the safety system and would move his hands away from each other. The grippers also occluded the cameras used for tracking targets.
 
 Workarounds that we implemented were changing his grippers with 3D printed ones that raised the point of contact with his grippers, used in tandem with a 3D printed blocked that slid onto the rail of the gun. The block served a variety of purposes; first it raised the gun further, keeping the camera vision as clear as possible, but it also moved the gun further from Baxter’s left gripper, increasing the tolerance the right gripper had to pull the trigger. Raising the gun also allowed it to be handled while cocked. While cocked, the gun’s spring loaded piston extends backwards. Raising the gun allowed the piston to freely move above Baxter’s wrist. We also experimented with using longer grippers for the trigger hand, but found that using the stock, wide grippers was sufficient to pull the trigger.
 
-Implementing Darknet proved to be challenging as well. While Darknet objectively does the job of classifying objects in the camera frame, it was often inconsistent, thus the experimental setup had to be robust to provide a consistent environment for Baxter to operate in and perform the routine consistently. First, a cup was used as a target for the project. The inconsistency of Darknet required using multiple cups in an effort to brute-force Baxter into recognizing at least one. Other objects could be easier. For example, Baxter has no difficulty recognizing people, but that ethically crosses some boundaries. 
+Implementing Darknet proved to be challenging as well. While Darknet objectively does the job of classifying objects in the camera frame, it was often inconsistent, thus the experimental setup had to be robust to provide a consistent environment for Baxter to operate in and perform the routine consistently. First, a cup was used as a target for the project. The inconsistency of Darknet required using multiple cups in an effort to brute-force Baxter into recognizing at least one. Other objects could be easier. For example, Baxter has no difficulty recognizing people, but that ethically crosses some boundaries.
 Further addressing the experimental setup, the tables used were marked on the floor with tape so that they were in the same position for each test run, and a crude holster was constructed so that the gun was consistently in the same place. The same initial positions of the arm were also hard coded to improve consistency in path planning.
 
 
