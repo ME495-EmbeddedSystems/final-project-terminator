@@ -2,3 +2,7 @@
 - git:
     local-name: moveit_robots
     uri: git@github.com:ME495-EmbeddedSystems/moveit_robots.git
+- git:
+    local-name: moveit_robots
+    uri: https://github.com/ME495-EmbeddedSystems/apriltag_ros.git
+
