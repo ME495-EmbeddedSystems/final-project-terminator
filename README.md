@@ -21,7 +21,13 @@ Baxter picks up a nerf gun, locates a cup, pulls trigger when given a user input
 
 
 ## Quickstart Guide
-WRITE LAUNCH FILE
+config/connect.sh (in every window except image)
+image_pipeline.launch
+move.launch
+rosrun safe_arms
+
+manipulate.launch 
+
 
 ## Action Sequence
 1. Baxter goes through initial calibration and start up sequence. Arms are moved to an initial pose.

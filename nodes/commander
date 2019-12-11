@@ -4,8 +4,7 @@ import rospy
 import roslib
 import sys
 import time
-
-import baxter_interface
+import rospkg
 
 import cv2
 import cv_bridge
@@ -32,8 +31,8 @@ use action server
 def enableBaxter():
 #    baxter_interface.RobotEnable().enable()
 #    rospy.sleep(0.25)
-    face = '/config/time_cop.jpg'
-    enableFace(face)
+    # face = '/config/time_cop.jpg'
+    # enableFace(face)
     # joint_state_topic = ['joint_states:=/robot/joint_states']
     # moveit_commander.roscpp_initialize(joint_state_topic)
     #
@@ -126,8 +125,8 @@ def main():
             aimclient.stop_tracking_goal()
             aimclient.cancel_all_goals()
 
-    # if True:
-    #     if True:
+    #if True:
+         #if True:
 
             print("canceled aiming")
 
@@ -191,23 +190,17 @@ def main():
                     else:
                         print("Please select another option")
 
-def initPos():
-    # move both arms to a good position before the initial poses
-    left = baxter_interface.Limb('left')
-    right = baxter_interface.Limb('right')
 
-    lcmd ={'left_s0':0.764689422761,'left_s1':-0.143810698864,'left_e0':-0.190213617698,'left_e1':1.71345654007,'left_w0':1.52822835993,'left_w1':-1.4684031092,'left_w2':0.0383495196971} #,4.51127815247}
-    rcmd = {'right_s0':-0.353582571608,'right_s1':-0.676869022654,'right_e0':0.20133497841,'right_e1':1.70156818896,'right_w0':-2.16828184368,'right_w1':-1.5704128316,'right_w2':0.245820421259} #,95.4983901978}
 
-    left.move_to_joint_positions(lcmd)
-    right.move_to_joint_positions(rcmd)
-
+    print("Using Forward Kinematics To Initialize Pose")
 
 if __name__ == '__main__':
     try:
         rospy.init_node("commander_client_py")
-        enableBaxter()
-        initPos()
+        rospack = rospkg.RosPack()
+        filepath = rospack.get_path('terminator')
+        face = filepath+'/config/time_cop.jpg'
+        enableFace(face)
         main()
     except rospy.ROSInterruptException:
         print("program interrupted before baxter could shoot")

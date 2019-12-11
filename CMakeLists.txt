@@ -81,6 +81,7 @@ install(PROGRAMS
    nodes/finalpose_test
 #   nodes/lefttest2
 #   nodes/righttest2
+   nodes/safe_arms
 
    #src/terminator/gripper.py
 
