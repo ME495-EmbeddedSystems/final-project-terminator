@@ -99,9 +99,6 @@ class RightArm(object):
         self.init_goal.position.y = -0.25
         self.init_goal.position.z = 0.30
 
-        # place arm in init position
-        #arm_init_pose(init_goal, self.right_group, self.position_tol, self.orientation_tol, "Right")
-
         # action server
         self._triggerfeedback = terminator.msg.CommandsFeedback()
         self._triggerresult = terminator.msg.CommandsResult()
