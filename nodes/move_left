@@ -58,7 +58,6 @@ class LeftArm(object):
         rospy.loginfo("Initializing Baxter")
         super(LeftArm, self).__init__()
 
-        #joint_state_topic = ['joint_states:=/joint_states_desired']
         joint_state_topic = ['joint_states:=/robot/joint_states']
         moveit_commander.roscpp_initialize(joint_state_topic)
 
@@ -126,22 +125,8 @@ class LeftArm(object):
         # pose of the tag
         self.tag_pose = None
 
-        # place arm in init position
-        #arm_init_pose(init_goal, self.left_group, self.position_tol, self.orientation_tol, "Left")
-        #self.shoot_pose()
-
-        # subscribe to gun pose
-        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.go_to_goal)
-        #self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.pick_up_gun)
         self.gun_pose_sub = rospy.Subscriber('/gun_pose', Pose, self.tag_position)
         self.gun_pose_sub = rospy.Subscriber('/targetBox', Point, self.target_position)
-
-        # # aiming action server
-        # self.aim_server = actionlib.SimpleActionServer('aim_gun', AimGunAction, self.execute, False)
-        # self.aim_server.start()
-        #
-        # self.aiming_feedback = AimGunFeedback()
-        # self.aiming_result = AimGunResult()
 
         # action server
         self._gunresult = terminator.msg.CommandsResult()
@@ -157,20 +142,6 @@ class LeftArm(object):
 
         print("Done Initializing Baxter Left Arm")
 
-    # def execute(self, goal):
-    #
-    #     target_in_sight = self.aim()
-    #
-    #     self.aiming_feedback.aiming_state = "Baxter is Aiming"
-    #     self.aim_server.publish_feedback(self.aiming_feedback)
-    #
-    #     if not target_in_sight:
-    #         self.aiming_result.found_target = False
-    #         self.aim_server.set_succeeded(self.aiming_result)
-    #
-    #     else:
-    #         self.aiming_result.found_target = True
-    #         self.aim_server.set_succeeded(self.aiming_result)
 
 
     def gunexecute_cb(self, goal):
@@ -347,11 +318,6 @@ class LeftArm(object):
 
         if pre_standoff:
             print("pre-standoff")
-            # translation is based on location of April tag
-            # pose_goal.position.x = msg.position.x + left_EE_pose.position.x - self.standoff
-            # pose_goal.position.y = msg.position.y + left_EE_pose.position.y + self.tag/2
-            # pose_goal.position.z = msg.position.z + left_EE_pose.position.z + self.tag/2
-
             pose_goal.position.x = trans[0] - self.prestandoff
             pose_goal.position.y = trans[1] + self.y_coord    #+ self.tag + self.camera_offset + self.y_coord
             pose_goal.position.z = trans[2] + self.vert_tg
@@ -379,14 +345,6 @@ class LeftArm(object):
             pose_goal.position.y = 0.30
             pose_goal.position.z = 0.20
 
-            # pose_goal.orientation.x = 0.03
-            # pose_goal.orientation.y = 0.85
-            # pose_goal.orientation.z = 0.004
-            # pose_goal.orientation.w = 0.53
-
-
-        #if not aiming:
-            # use pre-defined orientation
         pose_goal.orientation.x = self.orientation_x
         pose_goal.orientation.y = self.orientation_y
         pose_goal.orientation.z = self.orientation_z
@@ -407,64 +365,6 @@ class LeftArm(object):
 
         # check if orientation and position of goal are met
         return made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol)
-
-
-
-    def shoot_pose(self):
-        # TODO: move to end of pick up gun
-        ##########################################
-        # move to initial shooting position
-        # restrict z motion is x-axis
-        # get pose of EE
-        left_EE_pose = self.left_group.get_current_pose().pose
-
-
-        pose_goal = geometry_msgs.msg.Pose()
-        pose_goal.orientation.x = self.orientation_x
-        pose_goal.orientation.y = self.orientation_y
-        pose_goal.orientation.z = self.orientation_z
-        pose_goal.orientation.w = self.orientation_w
-
-        pose_goal.position.x = 0.87
-        pose_goal.position.y = 0.30
-        pose_goal.position.z = 0.20
-
-
-        plan, fraction = plan_cartesian_path(left_EE_pose, pose_goal, self.left_group)
-        print("The fraction of path covered")
-        print(fraction)
-
-        display_trajectory(plan, self.robot, self.display_trajectory_publisher)
-
-        rospy.sleep(2)
-
-
-
-        print("============ Press `Enter` to move to shooting pose ============")
-        raw_input()
-
-        try:
-            # execute path
-            self.left_group.execute(plan, wait=True)
-            self.left_group.stop()
-            self.left_group.clear_pose_targets()
-
-            # wait for baxter to get to goal
-            rospy.sleep(2)
-
-        except (rospy.ServiceException, rospy.ROSException), e:
-            rospy.loginfo("Service call failed: %s" % (e,))
-
-
-        # test if made it to pre-pick up position
-        left_EE_pose = self.left_group.get_current_pose().pose
-
-        if made_it(pose_goal, left_EE_pose, self.position_tol, self.orientation_tol):
-            print("Goal Reached")
-        else:
-            print("Goal Not Reached!")
-
-        ##########################################
 
 
     def aim(self):
@@ -549,16 +449,6 @@ class LeftArm(object):
             self.left_group.execute(plan, wait=True)
             self.left_group.stop()
             self.left_group.clear_pose_targets()
-
-
-            # try:
-            #     self.left_group.set_pose_target(pose_goal)
-            #     self.left_group.go(wait=True)
-            #     self.left_group.stop()
-            #     self.left_group.clear_pose_targets()
-            #
-            # except (rospy.ServiceException, rospy.ROSException), e:
-            #     rospy.loginfo("Service call failed: %s" % (e,))
 
             rospy.sleep(1)
 
