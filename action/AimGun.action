@@ -1,9 +1,0 @@
-# Action for aiming the gun
-# Define the goal
-string aim
----
-# Define the result
-bool found_target
----
-#Define feedback message
-string aiming_state
