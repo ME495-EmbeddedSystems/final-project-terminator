@@ -45,24 +45,48 @@ manipulate.launch
 ## Overall System Architecture and High Level Concepts
 
 ## Nodes
-calibrate
 commander
+The commander node runs an action server to orchestrate the state machine.
+
 final_pose
+
+
 image_pipeline
+The image pipeline node gets the image from baxter's hand cameras, rectifies it, and sends it to darknet. Darknet then returns a list of objects it has detected in the image. The image_pipeline node then finds the most probabale cup in the classified list and publishes this object's (x,y) pair in the image. 
+
 move_left
+
+
 move_right
 
 ## Launchfiles
+image_pipeline.launch launches darknet_ros, apriltags_ros, imageproc, the image_pipeline node, and an image view node.
+Darknet runs a neural network to reconize objects in images. apriltag_ros reconizes april tags in images. imageproc rectifies images. The image_pipeline node ties all the other image processing nodes together and orchestrates their interactions. The image view node launches a window to view the image classified by the neural network.     
+
+manipulate.launch  
+
+move.launch 
+
+setup.launch  
 
 
 ## Key Takeaways
-Lessons learned, algorithms used, etc
-### Moveit
+Lessons learned: The whole teamed learned a lot about ROS! We also learned how to use MoveIt and its motion planning algorithms. Finally, we all realized that it takes a lot of tuning and effort to make Baxter's performace robust. 
 
+ 
+Algorithms used: Darknet ros uses a deep neural network to recognize objects
+We used moveIt's computeCartesianWaypoint method to find the path between waypoints. 
+To aim the gun to hit the target, we simply move the gun so that the object appears in the center of the image
+
+### Moveit
+We forked the library and made a few small configuration changes. The forked repo is included in the terminator.rosinstall file
 
 ### AprilTags
-
+We forked the apriltags_ros library and included our copy in the terminator.rosinstall file.
+This library detects april tags in the enviroment. In order to use it, one needs to edit apriltag_ros/apriltag_ros/config/tags.yaml with the family, id and sizes of the tags you want the library to recognize.
 
 
 
 ## Future Work
+We would like to implement tracking and shooting of objects that move through space. We would likely need to implement another method of pulling the trigger. It would be hard to move the gun and have both of the robot's hands on the trigger. To pull the trigger, we could use a rasberry pi on a wifi network and send it a signal to shoot. This would require some sort of mechatronic device.    
+
