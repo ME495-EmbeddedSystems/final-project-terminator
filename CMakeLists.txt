@@ -7,17 +7,23 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   message_runtime
   rospy
+  rostest
+  rosunit
   std_msgs
 )
 
 catkin_python_setup()
 
 
-if(CATKIN_ENABLE_TESTING)
-find_package(rostest REQUIRED)
-add_rostest(test/myTest.test)
-endif()
+#if(CATKIN_ENABLE_TESTING)
+#	find_package(catkin REQUIRED COMPONENTS rostest)
+#	add_rostest(test/myTest.test)
+#endif()
 
+
+if (CATKIN_ENABLE_TESTING)
+  add_rostest(test/myTest.test)
+endif()
 
 ## Generate actions in the 'action' folder
 add_action_files(
@@ -52,14 +58,23 @@ catkin_package(
 
 
 install(PROGRAMS
-   nodes/image_pipeline
-   nodes/move_left
-   nodes/move_right
-   nodes/safe_arms
+
+   config/connect.sh	
+
    nodes/commander
+ 
    nodes/final_pose
-   src/terminator/gripper.py
-   config/connect.sh
+
+   nodes/image_pipeline   
+
+   nodes/move_left
+
+   nodes/move_right
+
+   nodes/safe_arms
+
+   src/${PROJECT_NAME}/gripper.py
+
 
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
