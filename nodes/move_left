@@ -145,12 +145,12 @@ class LeftArm(object):
 
 
     def gunexecute_cb(self, goal):
-		"""
-		Action service callback function
-		sets action variables
+    	"""
+    	Action service callback function
+    	sets action variables
 
-		ARGS: action goal
-		"""
+    	ARGS: action goal
+    	"""
 
         print("in gun cb")
         # helper variables
@@ -180,12 +180,12 @@ class LeftArm(object):
 
 
     def aimexecute_cb(self, goal):
-		"""
-		Action service callback function
-		sets action variables
+    	"""
+    	Action service callback function
+    	sets action variables
 
-		ARGS: action goal
-		"""
+    	ARGS: action goal
+    	"""
 
         print("in aim cb")
         # helper variables

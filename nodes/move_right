@@ -115,12 +115,12 @@ class RightArm(object):
         print("Done Initializing Baxter Right Arm")
 
     def triggerexecute_cb(self, goal):
-		"""
-		Action service callback function
-		sets action variables
+    	"""
+    	Action service callback function
+    	sets action variables
 
-		ARGS: action goal
-		"""
+    	ARGS: action goal
+    	"""
 
         print("in trigger cb")
         # helper variables
@@ -150,12 +150,12 @@ class RightArm(object):
 
 
     def fireexecute_cb(self, goal):
-		"""
-		Action service callback function
-		sets action variables
+    	"""
+    	Action service callback function
+    	sets action variables
 
-		ARGS: action goal
-		"""
+    	ARGS: action goal
+    	"""
 
         print("in trigger cb")
         # helper variables

@@ -202,7 +202,7 @@ class FinalPose(object):
 			self.left_group.stop()
 			self.left_group.clear_pose_targets()
 
-			wait for baxter to get to goal
+			# wait for baxter to get to goal
 			rospy.sleep(2)
 
 			self.left_group.execute(plan_left_second, wait=True)
