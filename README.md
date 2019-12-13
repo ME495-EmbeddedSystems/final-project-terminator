@@ -8,6 +8,10 @@ The package depends on moveit and apriltag.
 sudo apt install ros-melodic-moveit
 ```
 
+Download darknet_ros:
+[darknet_ros](https://github.com/leggedrobotics/darknet_ros.git)
+
+
 
 ## Quickstart Guide
 1. ```mkdir -p terminator_ws/src ```
@@ -30,11 +34,16 @@ sudo apt install ros-melodic-moveit
 ```
 source src/final-project-terminator/config/connect.sh
 ```
-10. ``` rosrun terminator safe_arms```
 
-11. ```roslaunch terminator move.launch ```
+10. ```roslaunch terminator image_pipeline.launch```
 
-12. ```rosrun terminator commander```
+11. ``` rosrun terminator safe_arms```
+
+12. ```roslaunch terminator move.launch ```
+
+13. ```roslaunch terminator manipulate.launch```
+
+14. ```rosrun terminator commander```
 
 
 ## Goal
