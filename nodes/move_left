@@ -81,6 +81,16 @@ class LeftArm(object):
         self.left_group.set_max_velocity_scaling_factor(0.15)
         self.left_group.set_max_acceleration_scaling_factor(0.1)
 
+
+        # State Gripper (L/R)
+        self.left_gripper = Gripper('left', CHECK_VERSION)
+        # Reboot Gripper
+        self.left_gripper.reboot()
+        # Calibrate Gripper
+        self.left_gripper.calibrate()
+        # Open Gripper
+        self.left_gripper.open()
+
         self.orientation_x = -0.003
         self.orientation_y = 0.696
         self.orientation_z = -0.0048
@@ -383,7 +393,7 @@ class LeftArm(object):
         print("==== AIMING ====")
 
         # goal tolerance in pixels
-        tol = 20
+        tol = 50
         y_goal = 640 / 2
         z_goal = 400 / 2
 
