@@ -206,6 +206,7 @@ if __name__ == '__main__':
         rospack = rospkg.RosPack()
         filepath = rospack.get_path('terminator')
         face = filepath+'/config/time_cop.jpg'
+        #face = filepath+'/config/img1.jpg'
         enableFace(face)
         main()
     except rospy.ROSInterruptException:
