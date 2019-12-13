@@ -8,9 +8,6 @@ The package depends on moveit and apriltag.
 sudo apt install ros-melodic-moveit
 ```
 
-```
-sudo apt install ros-melodic-apriltag-ros
-```
 
 ## Quickstart Guide
 1. ```mkdir -p terminator_ws/src ```
