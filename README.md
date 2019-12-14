@@ -50,7 +50,6 @@ source src/final-project-terminator/config/connect.sh
 The goal of this project was to have Baxter pick up a nerf gun, locate a cup, pull the nerf gun trigger to shoot the cup when given a user input, and move to a final pose.
 
 ## Video
-![Baxter ](config/time_cop.jpg)
 <video width="320" height="240" controls>
   <source src="video/BaxterTerminator.mov" type="video/mp4">
 </video>
