@@ -50,14 +50,10 @@ source src/final-project-terminator/config/connect.sh
 The goal of this project was to have Baxter pick up a nerf gun, locate a cup, pull the nerf gun trigger to shoot the cup when given a user input, and move to a final pose.
 
 ## Video
-<video width="320" height="240" controls>
-  <source src="video/BaxterTerminator.mov" type="video/mp4">
-</video>
+[![Baxter Terminator Video](https://img.youtube.com/vi/2MRsNefNWmw/0.jpg)](https://www.youtube.com/watch?v=2MRsNefNWmw "Nerf Gun Baxter")
 
-<video src="video/BaxterTerminator.mov" width="320" height="200" controls preload></video>
-
-![Baxter Terminator Video](video/BaxterTerminator.mov)
-
+</br>
+(click image to go to the Youtube video)
 
 ## Action Sequence
 1. Baxter goes through initial calibration and start up sequence. Arms are moved to an initial pose.
